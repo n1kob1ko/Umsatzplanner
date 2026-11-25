@@ -1,0 +1,17 @@
+{
+  "name": "umsatzplanner",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Umsatzplanner für Lokale – online mit Kunden-Accounts",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.14.0"
+  }
+}

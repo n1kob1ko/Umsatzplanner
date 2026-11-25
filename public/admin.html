@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="de-AT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Umsatzplanner · Verwaltung</title>
+<style>
+:root{--bg:#f4f1ec;--card:#fff;--ink:#1f1d1a;--muted:#6f6a62;--line:#e3ddd3;--accent:#b4532a;--accent-ink:#fff;--ok:#2f7d4f;--warn:#c08a1e;--bad:#b83232;--soft:#f8f5f0}
+@media (prefers-color-scheme: dark){:root{--bg:#1a1816;--card:#24211e;--ink:#f1ece4;--muted:#a59e93;--line:#3a352f;--accent:#e0794a;--accent-ink:#1a1816;--soft:#2c2824}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+h1{font-size:22px;margin:4px 0 16px}h2{font-size:17px;margin:0 0 12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.grow{flex:1}
+input,textarea{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--soft);color:var(--ink);min-width:0}
+.btn{font:inherit;font-weight:600;padding:8px 13px;border:1px solid var(--line);border-radius:9px;background:var(--soft);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-block}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--bad)}.btn.klein{padding:5px 9px;font-size:13px}
+.muted{color:var(--muted)}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:700;background:var(--soft);border:1px solid var(--line)}
+.pill.ok{color:var(--ok)}.pill.bad{color:var(--bad)}.pill.warn{color:var(--warn)}
+.kunde{border-top:1px solid var(--line);padding:12px 0}
+.kunde:first-child{border-top:0}
+.kunde h3{margin:0;font-size:16px}
+.neu{background:var(--soft);border:2px dashed var(--accent);border-radius:12px;padding:14px;margin-top:12px}
+.neu code{font-size:18px;font-weight:700;user-select:all}
+details summary{cursor:pointer;color:var(--muted);font-size:13px}
+table{border-collapse:collapse;font-size:13px}td{padding:2px 10px 2px 0}
+#fehler{color:var(--bad);font-weight:600}
+</style>
+</head>
+<body>
+<main>
+  <h1>🍽️ Umsatzplanner · Verwaltung</h1>
+
+  <div class="card" id="loginBox" hidden>
+    <h2>Anmelden</h2>
+    <form id="loginForm" class="row">
+      <input type="password" id="adminPw" placeholder="Admin-Passwort" autocomplete="current-password" class="grow">
+      <button class="btn primary" type="submit">Anmelden</button>
+    </form>
+    <p id="fehler"></p>
+  </div>
+
+  <div id="app" hidden>
+    <div class="card">
+      <div class="row"><h2 class="grow" style="margin:0">Neuer Kunde</h2><button class="btn klein" id="adminLogout">Abmelden</button></div>
+      <form id="neuForm" class="row" style="margin-top:12px">
+        <input id="neuName" placeholder="Benutzername (z. B. gasthaus-huber)" autocomplete="off" class="grow" required>
+        <input id="neuLokal" placeholder="Name des Lokals" class="grow">
+        <input id="neuNotiz" placeholder="Notiz (z. B. Abo bis …)" class="grow">
+        <button class="btn primary" type="submit">Anlegen</button>
+      </form>
+      <div class="neu" id="neuErgebnis" hidden></div>
+      <p class="muted" id="info" style="margin-bottom:0"></p>
+    </div>
+    <div class="card">
+      <div class="row"><h2 class="grow" style="margin:0">Kunden <span class="muted" id="anzahl"></span></h2><input id="suche" placeholder="Suchen …"></div>
+      <div id="liste" style="margin-top:8px"></div>
+    </div>
+  </div>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const zeit=s=>s?new Date(s).toLocaleString("de-AT",{dateStyle:"short",timeStyle:"short"}):"–";
+const api=(method,url,body)=>fetch(url,{method,credentials:"same-origin",headers:{"content-type":"application/json","x-umsatzplanner":"1"},body:body===undefined?undefined:JSON.stringify(body)});
+let kunden=[];
+
+async function laden(){
+  const r=await api("GET","/api/admin/kunden");
+  if(r.status===401){ $("#loginBox").hidden=false; $("#app").hidden=true; $("#adminPw").focus(); return; }
+  const j=await r.json(); kunden=j.kunden;
+  $("#loginBox").hidden=true; $("#app").hidden=false;
+  $("#info").textContent=`Pro Kunde höchstens ${j.maxGeraete} Geräte gleichzeitig · KI ${j.kiAktiv?`aktiv, ${j.kiLimit} Durchgänge pro Kunde und Tag`:"AUS (ANTHROPIC_API_KEY fehlt auf dem Server)"}`;
+  zeigen();
+}
+function zeigen(){
+  const s=$("#suche").value.trim().toLowerCase();
+  const l=kunden.filter(k=>!s||(k.name+" "+k.lokal+" "+k.notiz).toLowerCase().includes(s));
+  $("#anzahl").textContent=`(${kunden.length})`;
+  $("#liste").innerHTML=l.map(k=>`<div class="kunde" data-id="${k.id}">
+    <div class="row"><h3 class="grow">${esc(k.lokal||k.name)} <span class="muted" style="font-weight:400">· ${esc(k.name)}</span>
+      ${k.gesperrt?'<span class="pill bad">gesperrt</span>':`<span class="pill ${k.geraete?"ok":""}">${k.geraete} Gerät${k.geraete===1?"":"e"} angemeldet</span>`}</h3>
+      <button class="btn klein" data-a="passwort">Neues Passwort</button>
+      <button class="btn klein" data-a="abmelden">Geräte abmelden</button>
+      <button class="btn klein ${k.gesperrt?"":"danger"}" data-a="sperren">${k.gesperrt?"Entsperren":"Sperren"}</button>
+      <a class="btn klein" href="/api/admin/kunden/${k.id}/daten">Daten (JSON)</a></div>
+    <div class="muted" style="font-size:13px;margin-top:4px">Angelegt ${zeit(k.erstellt)} · zuletzt aktiv ${zeit(k.zuletzt)} · zuletzt gespeichert ${zeit(k.geaendert)}${k.groesse?` (${Math.round(k.groesse/1024)} KB)`:""} · KI heute ${k.ki_heute||0}, diesen Monat ${k.ki_monat||0}${k.notiz?` · <b>${esc(k.notiz)}</b>`:""}</div>
+    <details style="margin-top:6px"><summary>Details</summary>
+      <div style="margin-top:8px">
+        <table>${k.sitzungen.map(s=>`<tr><td>${esc(s.geraet)}</td><td class="muted">${esc(s.ip)}</td><td class="muted">angemeldet ${zeit(s.erstellt)}, zuletzt ${zeit(s.zuletzt)}</td></tr>`).join("")||'<tr><td class="muted">Kein Gerät angemeldet</td></tr>'}</table>
+        <div class="row" style="margin-top:8px"><input data-f="lokal" value="${esc(k.lokal)}" placeholder="Lokal"><input data-f="notiz" value="${esc(k.notiz)}" placeholder="Notiz" class="grow"><button class="btn klein" data-a="bearbeiten">Speichern</button></div>
+        <div style="margin-top:8px;font-size:13px">Tägliche Sicherungen (30 Tage): ${k.sicherungen.map(t=>`<span style="white-space:nowrap">${esc(t)} <a href="/api/admin/kunden/${k.id}/daten/${t}">laden</a> · <a href="#" data-a="wiederherstellen" data-tag="${t}">zurücksetzen</a></span>`).join(" &nbsp;|&nbsp; ")||'<span class="muted">noch keine</span>'}</div>
+        <div style="margin-top:10px"><button class="btn klein danger" data-a="loeschen">Kunde löschen …</button></div>
+      </div></details>
+  </div>`).join("")||'<p class="muted">Noch keine Kunden.</p>';
+}
+function pwAnzeigen(titel,name,pw){
+  const box=$("#neuErgebnis"); box.hidden=false;
+  box.innerHTML=`<b>${esc(titel)}</b><br>Benutzername: <code>${esc(name)}</code><br>Passwort: <code>${esc(pw)}</code>
+    <p class="muted" style="margin:8px 0">Jetzt an den Kunden weitergeben, das Passwort wird nur dieses eine Mal angezeigt. Der Kunde kann es danach unter Einstellungen → Konto selbst ändern.</p>
+    <div class="row"><button class="btn klein" id="kopieren">Zugangsdaten kopieren</button><button class="btn klein" id="zu">Schließen</button></div>`;
+  const text=`Dein Zugang zum Umsatzplanner\nAdresse: ${location.origin}\nBenutzername: ${name}\nPasswort: ${pw}`;
+  $("#kopieren").onclick=async()=>{ try{ await navigator.clipboard.writeText(text); $("#kopieren").textContent="✓ Kopiert"; }catch(e){ alert(text); } };
+  $("#zu").onclick=()=>{ box.hidden=true; box.innerHTML=""; };
+  box.scrollIntoView({behavior:"smooth",block:"center"});
+}
+$("#loginForm").onsubmit=async e=>{
+  e.preventDefault(); $("#fehler").textContent="";
+  const r=await api("POST","/api/admin/login",{passwort:$("#adminPw").value}); const j=await r.json().catch(()=>({}));
+  if(r.ok){ $("#adminPw").value=""; laden(); } else $("#fehler").textContent=j.fehler||"Hat nicht geklappt";
+};
+$("#adminLogout").onclick=async()=>{ await api("POST","/api/admin/logout",{}); laden(); };
+$("#neuForm").onsubmit=async e=>{
+  e.preventDefault();
+  const r=await api("POST","/api/admin/kunden",{name:$("#neuName").value.trim(),lokal:$("#neuLokal").value.trim(),notiz:$("#neuNotiz").value.trim()});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) return alert(j.fehler||"Hat nicht geklappt");
+  ["#neuName","#neuLokal","#neuNotiz"].forEach(s=>$(s).value="");
+  pwAnzeigen("Kunde angelegt",j.name,j.passwort); laden();
+};
+$("#suche").oninput=zeigen;
+$("#liste").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-a]"); if(!b) return;
+  const el=b.closest("[data-id]"), k=kunden.find(x=>x.id===el.dataset.id), url=`/api/admin/kunden/${k.id}`;
+  const a=b.dataset.a; let r;
+  if(a==="passwort"){ if(!confirm(`Neues Passwort für ${k.name} erzeugen?\nAlle Geräte werden abgemeldet.`)) return;
+    r=await api("POST",url+"/passwort",{}); const j=await r.json(); if(r.ok) pwAnzeigen("Neues Passwort",j.name,j.passwort); }
+  else if(a==="abmelden"){ if(!confirm(`Alle Geräte von ${k.name} abmelden?`)) return; r=await api("POST",url+"/abmelden",{}); }
+  else if(a==="sperren"){ if(!k.gesperrt&&!confirm(`${k.name} sperren?\nDer Kunde kann sich nicht mehr anmelden. Die Daten bleiben erhalten.`)) return; r=await api("POST",url+"/sperren",{gesperrt:!k.gesperrt}); }
+  else if(a==="bearbeiten"){ r=await api("POST",url+"/bearbeiten",{lokal:el.querySelector("[data-f=lokal]").value,notiz:el.querySelector("[data-f=notiz]").value}); }
+  else if(a==="wiederherstellen"){ e.preventDefault(); if(!confirm(`Daten von ${k.name} auf den Stand vom ${b.dataset.tag} zurücksetzen?\nDer aktuelle Stand wird vorher als Sicherung von heute behalten.`)) return; r=await api("POST",url+"/wiederherstellen/"+b.dataset.tag,{}); }
+  else if(a==="loeschen"){ const t=prompt(`Kunde ${k.name} mit ALLEN Daten endgültig löschen?\nZum Bestätigen den Benutzernamen eintippen:`); if(t===null) return; r=await api("DELETE",url,{bestaetigung:t}); }
+  if(r&&!r.ok){ const j=await r.json().catch(()=>({})); alert(j.fehler||"Hat nicht geklappt"); }
+  laden();
+});
+laden();
+</script>
+</body>
+</html>

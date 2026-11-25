@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de-AT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Umsatzplanner · Anmelden</title>
+<style>
+:root{--bg:#f4f1ec;--card:#fff;--ink:#1f1d1a;--muted:#6f6a62;--line:#e3ddd3;--accent:#b4532a;--accent-ink:#fff;--bad:#b83232;--soft:#f8f5f0}
+@media (prefers-color-scheme: dark){:root{--bg:#1a1816;--card:#24211e;--ink:#f1ece4;--muted:#a59e93;--line:#3a352f;--accent:#e0794a;--accent-ink:#1a1816;--soft:#2c2824}}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px}
+h1{font-size:22px;margin:0 0 4px}
+p{color:var(--muted);margin:0 0 20px;font-size:14px}
+label{display:block;font-size:14px;font-weight:600;margin:0 0 6px}
+input{width:100%;font:inherit;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);color:var(--ink);margin-bottom:14px}
+input:focus{outline:2px solid var(--accent);outline-offset:1px}
+button{width:100%;font:inherit;font-weight:700;padding:13px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+button:disabled{opacity:.6}
+#fehler{color:var(--bad);font-weight:600;min-height:22px;margin:12px 0 0;font-size:14px}
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <h1>🍽️ Umsatzplanner</h1>
+    <p>Bitte mit deinem Zugang anmelden.</p>
+    <form id="f" novalidate>
+      <label for="name">Benutzername</label>
+      <input id="name" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      <label for="pw">Passwort</label>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <button id="los" type="submit">Anmelden</button>
+      <div id="fehler" role="alert"></div>
+    </form>
+  </div>
+</main>
+<script>
+const f=document.getElementById("f"), los=document.getElementById("los"), fehler=document.getElementById("fehler");
+f.addEventListener("submit",async e=>{
+  e.preventDefault(); fehler.textContent="";
+  const name=document.getElementById("name").value.trim(), passwort=document.getElementById("pw").value;
+  if(!name||!passwort){ fehler.textContent="Bitte Benutzername und Passwort eingeben."; return; }
+  los.disabled=true; los.textContent="Einen Moment …";
+  try{
+    const r=await fetch("/api/login",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json","x-umsatzplanner":"1"},body:JSON.stringify({name,passwort})});
+    const j=await r.json().catch(()=>({}));
+    if(r.ok){ location.href="/"; return; }
+    fehler.textContent=j.fehler||"Anmelden hat nicht geklappt.";
+  }catch(err){ fehler.textContent="Keine Verbindung. Bitte Internet prüfen."; }
+  los.disabled=false; los.textContent="Anmelden";
+});
+document.getElementById("name").focus();
+</script>
+</body>
+</html>

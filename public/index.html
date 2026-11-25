@@ -1,0 +1,1578 @@
+<!doctype html>
+<html lang="de-AT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Umsatzplanner</title>
+<style>
+:root{
+  --bg:#f4f1ec; --card:#fff; --ink:#1f1d1a; --muted:#6f6a62; --line:#e3ddd3;
+  --accent:#b4532a; --accent-ink:#fff; --ok:#2f7d4f; --warn:#c08a1e; --bad:#b83232;
+  --soft:#f8f5f0; --bar:#d98b5f;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#1a1816; --card:#24211e; --ink:#f1ece4; --muted:#a59e93; --line:#3a352f;
+    --accent:#e0794a; --accent-ink:#1a1816; --soft:#2c2824; --bar:#e0794a; }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;gap:12px}
+.top h1{font-size:20px;margin:0}
+.top .heute{color:var(--muted);font-size:14px;text-align:right}
+nav{display:flex;gap:4px;overflow-x:auto;padding:0 12px 8px}
+nav button{flex:0 0 auto;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;padding:10px 14px;border-radius:10px;cursor:pointer;position:relative}
+nav button.aktiv{background:var(--accent);color:var(--accent-ink)}
+nav .badge{display:inline-block;min-width:20px;padding:0 6px;margin-left:6px;border-radius:10px;background:var(--bad);color:#fff;font-size:12px;line-height:20px}
+main{max-width:1200px;margin:0 auto;padding:16px}
+.tab{display:none}.tab.aktiv{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.card h2{margin:0 0 12px;font-size:18px}
+.card h3{margin:16px 0 8px;font-size:16px}
+.muted{color:var(--muted)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.grow{flex:1}
+button.btn,.btn{border:1px solid var(--line);background:var(--soft);color:var(--ink);font:inherit;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--bad)}
+.btn.klein{padding:6px 10px;font-size:14px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+input,select{font:inherit;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+input[type=number]{width:100px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:13px;color:var(--muted);font-weight:600}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+.tabelle{overflow-x:auto}
+
+/* Kassa */
+.kassa{display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start}
+@media (max-width:820px){.kassa{grid-template-columns:1fr}}
+.kat{margin:4px 0 8px;font-size:13px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.produkte{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.prod{border:1px solid var(--line);background:var(--soft);border-radius:12px;padding:14px 10px;text-align:left;cursor:pointer;font:inherit;color:var(--ink);min-height:78px;display:flex;flex-direction:column;justify-content:space-between}
+.prod:active{transform:scale(.97)}
+.prod b{font-size:16px}
+.prod span{color:var(--muted);font-size:14px}
+.prod.knapp{border-color:var(--warn)}
+.prod.leer{opacity:.5;border-style:dashed}
+.bon{position:sticky;top:110px;scroll-margin-top:130px}
+.bon .pos{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.bon .pos .name{flex:1}
+.bon .menge{display:flex;align-items:center;gap:6px}
+.bon .menge button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:18px;cursor:pointer}
+.summe{display:flex;justify-content:space-between;font-size:26px;font-weight:800;margin:14px 0}
+.leerbon{color:var(--muted);padding:20px 0;text-align:center}
+
+/* Stats */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.kpi .l{color:var(--muted);font-size:13px}
+.kpi .v{font-size:24px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums}
+.chart{display:flex;align-items:flex-end;gap:3px;height:200px;padding-top:10px;overflow-x:auto}
+.chart .col{flex:1 0 14px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:14px}
+.chart .b{width:100%;background:var(--bar);border-radius:4px 4px 0 0;min-height:1px}
+.chart .col:hover .b{background:var(--accent)}
+.chart .x{font-size:11px;color:var(--muted);margin-top:4px;white-space:nowrap}
+.hbar{display:flex;align-items:center;gap:10px;padding:6px 0}
+.hbar .n{width:180px;flex:0 0 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar .t{flex:1;background:var(--soft);border-radius:6px;height:22px;overflow:hidden}
+.hbar .t div{height:100%;background:var(--bar);border-radius:6px}
+.hbar .z{width:190px;text-align:right;font-variant-numeric:tabular-nums;flex:0 0 auto}
+@media (max-width:600px){.hbar .n{width:110px}.hbar .z{width:110px;font-size:14px}}
+.pill{display:inline-block;white-space:nowrap;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700}
+.pill.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.pill.warn{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.pill.bad{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--soft);color:var(--ink);font:inherit;padding:8px 14px;cursor:pointer}
+.seg button.aktiv{background:var(--accent);color:var(--accent-ink);font-weight:700}
+
+/* Dialog */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:40;padding:16px}
+.modal[hidden]{display:none}
+#frage{z-index:45}
+.modalbox{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);padding:18px;width:min(560px,100%);max-height:90vh;overflow:auto}
+#frageText{white-space:pre-line;font-size:17px;margin:0 0 16px}
+.hinweis{background:var(--bad);color:#fff;padding:10px 16px;font-weight:600;font-size:14px}
+.feld{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.feld label{font-size:13px;color:var(--muted);font-weight:600}
+.rz{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.rz select{flex:1}
+.mobilbar{display:none}
+@media (max-width:820px){
+  .bon{position:static}
+  .mobilbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);padding:10px 16px;gap:10px;align-items:center;box-shadow:0 -4px 14px rgba(0,0,0,.08)}
+  .mobilbar.weg{display:none}
+  body.kassaAktiv main{padding-bottom:90px}
+}
+.wt-best .n{font-weight:800}
+input.zaehl{width:110px;text-align:right}
+tr.diffminus td.d{color:var(--bad);font-weight:700}
+tr.diffplus td.d{color:var(--ok);font-weight:700}
+tfoot td{font-weight:800;border-bottom:0}
+.detail{background:var(--soft)}
+.imp-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.imp-grid{grid-template-columns:1fr}}
+.chk{display:flex;gap:8px;align-items:center;margin-bottom:8px}.chk input{flex:0 0 auto}
+html[data-online] .nur-offline{display:none!important}
+html:not([data-online]) .nur-online{display:none!important}
+.einst{display:none}.einst.aktiv{display:block}
+#einstNav{margin-bottom:16px;flex-wrap:wrap}
+.sync{font-size:13px;opacity:.85}
+.sperre{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+.sperre[hidden]{display:none!important}
+a{color:var(--accent)}
+.schritte{padding-left:20px;margin:0 0 12px}.schritte li{margin-bottom:4px}
+textarea{font:inherit;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.imp-gericht{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--soft)}
+.imp-gericht.aus{opacity:.5}
+.imp-kopf{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.imp-kopf input[data-f=name]{flex:1 1 200px;font-weight:700}
+.imp-kopf input[data-f=kategorie]{width:140px}
+.imp-kopf input[data-f=preis]{width:90px;text-align:right}
+.imp-z{display:grid;grid-template-columns:minmax(120px,1fr) 80px 90px 100px auto 34px;gap:6px;align-items:center;margin-top:6px}
+.imp-z input,.imp-z select{width:100%}
+.imp-z .tag{font-size:12px}
+@media (max-width:600px){.imp-z{grid-template-columns:1fr 70px 80px;}.imp-z .ek,.imp-z .tag{display:none}}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:dreh 0.8s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes dreh{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+.toast.zeigen{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <div class="hinweis" id="speicherHinweis" hidden>⚠️ In dieser Ansicht kann nicht gespeichert werden. Bitte die Datei herunterladen und direkt im Browser öffnen (Chrome, Safari, Edge).</div>
+  <div class="hinweis" id="vorschauHinweis" style="background:var(--warn)" hidden>Du siehst die App in einer Vorschau. Am besten die Datei herunterladen und direkt im Browser öffnen, sonst funktionieren Downloads (Sicherung, CSV) evtl. nicht.</div>
+  <div class="top">
+    <h1>🍽️ Umsatzplanner</h1>
+    <div class="heute"><span id="kopfInfo"></span><br class="nur-online"><span class="sync nur-online" id="syncStatus"></span></div>
+  </div>
+  <nav id="nav">
+    <button data-tab="kassa" class="aktiv">Kassa</button>
+    <button data-tab="lager">Lager &amp; Rezepte</button>
+    <button data-tab="inventur">Inventur</button>
+    <button data-tab="einkauf">Einkaufsliste <span class="badge" id="badgeEinkauf" hidden></span></button>
+    <button data-tab="umsatz">Umsatz</button>
+    <button data-tab="artikel">Verkaufte Artikel</button>
+    <button data-tab="daten">Einstellungen</button>
+  </nav>
+</header>
+
+<main>
+<!-- KASSA -->
+<section class="tab aktiv" id="tab-kassa">
+  <div class="kassa">
+    <div class="card">
+      <h2>Artikel antippen</h2>
+      <div id="produktGrid"></div>
+    </div>
+    <div class="card bon">
+      <h2>Aktuelle Buchung</h2>
+      <div id="bonListe"></div>
+      <div class="summe"><span>Gesamt</span><span id="bonSumme">€ 0,00</span></div>
+      <div class="row">
+        <button class="btn grow" id="bonLeeren">Leeren</button>
+        <button class="btn primary grow" id="bonBuchen">Buchen</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="row"><h2 class="grow" style="margin:0">Heute gebucht</h2><b id="heuteSumme"></b></div>
+    <div class="tabelle"><table id="heuteTabelle"></table></div>
+  </div>
+</section>
+
+<!-- LAGER -->
+<section class="tab" id="tab-lager">
+  <div class="card">
+    <div class="row"><h2 class="grow" style="margin:0">Zutaten im Lager</h2><button class="btn primary" id="neueZutat">+ Zutat</button></div>
+    <p class="muted">Der Bestand wird bei jedem Verkauf automatisch nach Rezept abgezogen. Unter „Mindestbestand“ landet die Zutat auf der Einkaufsliste.</p>
+    <div class="tabelle"><table id="zutatenTabelle"></table></div>
+  </div>
+  <div class="card">
+    <div class="row"><h2 class="grow" style="margin:0">Artikel &amp; Rezepte</h2><button class="btn primary" id="neuesProdukt">+ Artikel</button></div>
+    <p class="muted">Pro Artikel steht, wie viel von jeder Zutat für eine Portion verbraucht wird. Daraus ergibt sich der Wareneinsatz (Einkaufskosten pro Portion). Die Quote ist Wareneinsatz geteilt durch Verkaufspreis.</p>
+    <div class="tabelle"><table id="produkteTabelle"></table></div>
+  </div>
+</section>
+
+
+<!-- INVENTUR -->
+<section class="tab" id="tab-inventur">
+  <div class="card">
+    <div class="row"><h2 class="grow" style="margin:0">Inventur – Lager zählen</h2>
+      <button class="btn" id="invLeeren">Eingaben leeren</button>
+      <button class="btn primary" id="invAbschliessen">Inventur abschließen</button></div>
+    <p class="muted">Zähl was wirklich im Lager ist und trag es bei „Gezählt“ ein. Leere Felder werden nicht verändert. Deine Eingaben bleiben gespeichert, du kannst also zwischendurch weg. Beim Abschließen wird der gezählte Bestand übernommen und die Abweichung (Schwund) gespeichert.</p>
+    <p id="invInfo"></p>
+    <div class="tabelle"><table id="invTabelle"></table></div>
+  </div>
+  <div class="card">
+    <h2>Frühere Inventuren</h2>
+    <div class="tabelle"><table id="invHistorie"></table></div>
+  </div>
+</section>
+
+<!-- EINKAUF -->
+<section class="tab" id="tab-einkauf">
+  <div class="card">
+    <h2>Muss nachgekauft werden</h2>
+    <p class="muted">Alles, was auf oder unter dem Mindestbestand ist. Die Menge füllt bis zum Sollbestand auf.</p>
+    <div class="tabelle"><table id="einkaufTabelle"></table></div>
+  </div>
+  <div class="card">
+    <h2>Wird bald knapp</h2>
+    <p class="muted">Geschätzt aus dem Verbrauch der letzten 14 Tage.</p>
+    <div class="tabelle"><table id="baldTabelle"></table></div>
+  </div>
+  <div class="card">
+    <div class="row"><h2 class="grow" style="margin:0">Letzte Wareneingänge</h2><b id="zugangMonat"></b></div>
+    <div class="tabelle"><table id="zugangTabelle"></table></div>
+  </div>
+</section>
+
+<!-- UMSATZ -->
+<section class="tab" id="tab-umsatz">
+  <div class="kpis" id="umsatzKpis"></div>
+  <div class="card">
+    <div class="row" style="margin-bottom:8px">
+      <h2 class="grow" style="margin:0" id="umsatzTitel">Umsatz pro Tag</h2>
+      <div class="seg" id="umsatzModus"><button data-m="tag" class="aktiv">Pro Tag</button><button data-m="monat">Pro Monat</button></div>
+    </div>
+    <div class="chart" id="umsatzChart"></div>
+  </div>
+  <div class="card">
+    <div class="tabelle"><table id="umsatzTabelle"></table></div>
+  </div>
+  <div class="card">
+    <div class="row" style="margin-bottom:8px">
+      <h2 class="grow" style="margin:0">Welcher Wochentag läuft am besten?</h2>
+      <div class="seg" id="wtZeitraum"><button data-w="28" class="aktiv">4 Wochen</button><button data-w="91">3 Monate</button><button data-w="0">Gesamt</button></div>
+    </div>
+    <p class="muted">Durchschnitt pro geöffnetem Tag (Tage ohne Verkauf zählen als Ruhetag).</p>
+    <div id="wtBars"></div>
+  </div>
+  <div class="card">
+    <h2>Welche Uhrzeit läuft am besten?</h2>
+    <p class="muted">Durchschnittlicher Umsatz pro Stunde an einem geöffneten Tag (gleicher Zeitraum wie oben).</p>
+    <div class="chart" id="stundenChart"></div>
+    <p id="stundenInfo" class="muted"></p>
+  </div>
+</section>
+
+<!-- ARTIKEL -->
+<section class="tab" id="tab-artikel">
+  <div class="card">
+    <div class="row">
+      <h2 class="grow" style="margin:0">Was wurde verkauft?</h2>
+      <div class="seg" id="artikelZeitraum">
+        <button data-z="tag" class="aktiv">Tag</button><button data-z="monat">Monat</button><button data-z="alle">Gesamt</button>
+      </div>
+      <input type="date" id="artikelDatum">
+      <input type="month" id="artikelMonat" hidden>
+    </div>
+  </div>
+  <div class="kpis" id="artikelKpis"></div>
+  <div class="card">
+    <h2>Bestseller</h2>
+    <div class="row" style="margin-bottom:8px"><span class="muted">Sortieren nach</span>
+      <div class="seg" id="artikelSort"><button data-s="menge" class="aktiv">Stück</button><button data-s="umsatz">Umsatz</button><button data-s="gewinn">Rohertrag</button></div>
+    </div>
+    <div id="artikelBars"></div>
+  </div>
+  <div class="card">
+    <h2>Läuft schlecht</h2>
+    <div id="artikelFlops"></div>
+  </div>
+</section>
+
+<!-- DATEN -->
+<section class="tab" id="tab-daten">
+  <div class="seg" id="einstNav"><button data-e="import" class="aktiv">Speisekarte &amp; Rezepte</button><button data-e="sicherung">Daten &amp; Sicherung</button><button data-e="konto" class="nur-online">Konto</button></div>
+<div class="einst aktiv" id="einst-import">
+  <div class="card" id="impStart">
+    <h2>Speisekarte und Rezepte einspielen</h2>
+    <p class="muted">Zwei Wege: Entweder du füllst die Excel-Vorlage aus, oder du lädst Fotos bzw. PDFs deiner Speisekarte oder deiner Rezepte hoch und die KI liest sie aus. In beiden Fällen siehst du danach alles zur Kontrolle, bevor etwas übernommen wird. Vorhandene Artikel mit gleichem Namen werden aktualisiert, nicht doppelt angelegt.</p>
+  </div>
+  <div class="imp-grid" id="impWege">
+    <div class="card">
+      <h2>1 · Excel-Vorlage</h2>
+      <ol class="muted schritte">
+        <li>Vorlage herunterladen und in Excel öffnen.</li>
+        <li>Pro Zutat eine Zeile ausfüllen. Das Gericht musst du nur in der ersten Zeile schreiben.</li>
+        <li>Als CSV speichern (oder alle Zeilen kopieren) und hier hochladen bzw. einfügen.</li>
+      </ol>
+      <div class="row">
+        <button class="btn" id="vorlageLeer">Vorlage herunterladen</button>
+        <button class="btn" id="vorlageAktuell">Meine aktuellen Daten als Vorlage</button>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <label class="btn primary">Ausgefüllte Vorlage hochladen<input type="file" id="csvDatei" accept=".csv,.txt,text/csv,text/plain" hidden></label>
+      </div>
+      <details style="margin-top:12px"><summary class="muted">Oder direkt aus Excel kopieren und einfügen</summary>
+        <textarea id="csvText" rows="6" placeholder="Zeilen inklusive Überschrift aus Excel kopieren und hier einfügen" style="width:100%;margin-top:8px"></textarea>
+        <button class="btn" id="csvTextLesen" style="margin-top:8px">Eingefügte Zeilen prüfen</button>
+      </details>
+    </div>
+    <div class="card">
+      <h2>2 · KI liest Speisekarte oder Rezepte</h2>
+      <div class="seg" id="kiModus" style="margin-bottom:10px"><button data-k="karte" class="aktiv">Speisekarte</button><button data-k="rezepte">Rezepte</button></div>
+      <p class="muted" id="kiBeschreibung"></p>
+      <div class="nur-offline">
+        <p class="muted">Das läuft über Claude von Anthropic mit deinem eigenen API-Schlüssel und kostet pro Durchgang meist nur wenige Cent.</p>
+        <div class="feld"><label>Anthropic API-Schlüssel <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">(hier erstellen)</a></label>
+          <input type="password" id="kiKey" placeholder="sk-ant-…" autocomplete="off"></div>
+        <label class="chk"><input type="checkbox" id="kiKeyMerken"> Schlüssel auf diesem Gerät merken</label>
+      </div>
+      <label class="chk" style="margin-bottom:12px"><input type="checkbox" id="kiRezepte" checked> <span id="kiRezepteText">Rezepte und Einkaufspreise schätzen lassen</span></label>
+      <div class="row">
+        <label class="btn primary">Foto oder PDF wählen<input type="file" id="kiDateien" accept="image/*,application/pdf" multiple hidden></label>
+        <span class="muted" id="kiDateiInfo">Noch nichts gewählt</span>
+      </div>
+      <details style="margin-top:12px" id="kiTextBox"><summary class="muted">Oder Text einfügen (z. B. Rezept aus Word oder E-Mail)</summary>
+        <textarea id="kiText" rows="6" maxlength="60000" placeholder="Rezepte oder Speisekarte als Text hier einfügen" style="width:100%;margin-top:8px"></textarea>
+      </details>
+      <button class="btn primary" id="kiStart" style="margin-top:12px" disabled>Auslesen</button>
+      <p class="muted nur-online" id="kiKontingent" style="margin:8px 0 0"></p>
+      <p id="kiStatus" class="muted" style="margin-bottom:0"></p>
+    </div>
+  </div>
+  <div class="card" id="impPruefen" hidden>
+    <div class="row"><h2 class="grow" style="margin:0">Bitte prüfen</h2>
+      <button class="btn" id="impVerwerfen">Verwerfen</button>
+      <button class="btn primary" id="impUebernehmen">Ausgewählte übernehmen</button></div>
+    <p class="muted" id="impInfo"></p>
+    <div id="impListe"></div>
+  </div>
+</div>
+<div class="einst" id="einst-sicherung">
+  <div class="card">
+    <h2>Sicherung</h2>
+    <p class="muted nur-offline">Alle Daten liegen nur in diesem Browser auf diesem Gerät. Lade regelmäßig eine Sicherung herunter, damit nichts verloren geht (z. B. wenn der Browserverlauf gelöscht wird).</p>
+    <p class="muted nur-online">Deine Daten werden automatisch online gespeichert und sind auf deinen Geräten gleich. Eine Sicherung als Datei kannst du trotzdem jederzeit herunterladen.</p>
+    <div class="row">
+      <button class="btn primary" id="exportBtn">Sicherung herunterladen</button>
+      <label class="btn">Sicherung laden<input type="file" id="importFile" accept=".json,application/json" hidden></label>
+      <button class="btn" id="csvBtn">Verkäufe als CSV (Excel)</button>
+    </div>
+    <p class="muted" id="letzteSicherung"></p>
+  </div>
+  <div class="card">
+    <h2>Neu anfangen</h2>
+    <div class="row">
+      <button class="btn danger" id="verkaeufeLoeschen">Nur Verkäufe löschen</button>
+      <button class="btn danger" id="beispielLaden">Beispieldaten laden</button>
+      <button class="btn danger" id="allesLoeschen">Alles löschen (leer starten)</button>
+    </div>
+  </div>
+</div>
+
+<div class="einst nur-online" id="einst-konto">
+  <div class="card">
+    <h2>Konto</h2>
+    <p>Angemeldet als <b id="kontoName"></b><span id="kontoLokal"></span></p>
+    <p class="muted" id="kontoGeraete"></p>
+    <div class="row">
+      <button class="btn" id="abmelden">Abmelden</button>
+      <button class="btn danger" id="alleAbmelden">Alle anderen Geräte abmelden</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Passwort ändern</h2>
+    <div class="feld"><label for="pwAlt">Aktuelles Passwort</label><input type="password" id="pwAlt" autocomplete="current-password"></div>
+    <div class="feld"><label for="pwNeu">Neues Passwort (mind. 8 Zeichen)</label><input type="password" id="pwNeu" autocomplete="new-password"></div>
+    <div class="feld"><label for="pwNeu2">Neues Passwort wiederholen</label><input type="password" id="pwNeu2" autocomplete="new-password"></div>
+    <button class="btn primary" id="pwAendern">Passwort ändern</button>
+  </div>
+</div>
+</section>
+</main>
+
+<div class="modal" id="dlg" hidden><div class="modalbox" id="dlgForm"></div></div>
+<div class="modal" id="frage" hidden><div class="modalbox"><p id="frageText"></p>
+  <div class="row"><span class="grow"></span><button type="button" class="btn" id="frageNein">Abbrechen</button><button type="button" class="btn primary" id="frageJa">OK</button></div></div></div>
+<div class="mobilbar weg" id="mobilbar"><div class="grow"><span class="muted" id="mbAnz"></span><br><b style="font-size:20px" id="mbSumme"></b></div>
+<button class="btn" id="mbZeigen">Bon ansehen</button><button class="btn primary" id="mbBuchen">Buchen</button></div>
+<div class="toast" id="toast"></div>
+<div class="sperre" id="sperre" hidden><div class="modalbox"><h2 style="margin-top:0">Abgemeldet</h2><p id="sperreText"></p>
+  <div class="row"><span class="grow"></span><a class="btn primary" href="/login">Neu anmelden</a></div></div></div>
+
+<script>
+"use strict";
+const KEY = "umsatzplanner-v1";
+const eur = new Intl.NumberFormat("de-AT",{style:"currency",currency:"EUR"});
+const num = (n,d=2)=> new Intl.NumberFormat("de-DE",{maximumFractionDigits:d}).format(n);
+const inp = (n,d=3)=> new Intl.NumberFormat("de-DE",{maximumFractionDigits:d,useGrouping:false}).format(n||0);
+const eurFein = n=> new Intl.NumberFormat("de-AT",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:n<1?4:2}).format(n);
+// liest "1500", "1.500", "1 500", "1.500,5", "1,5", "0.125" richtig
+function zahl(v){
+  v=String(v??"").replace(/[a-zA-ZäöüÄÖÜß€$]+\.?/g,"").replace(/[\s\u00a0\u202f']/g,"");
+  if(v==="") return null;
+  if(v.includes(",")) v=v.replace(/\./g,"").replace(",",".");
+  else if((v.match(/\./g)||[]).length>1) v=v.replace(/\./g,"");
+  else if(/^-?[1-9]\d{0,2}\.\d{3}$/.test(v)) v=v.replace(".","");
+  if(!/^-?\d*\.?\d+$/.test(v) && !/^-?\d+\.$/.test(v)) return null;
+  const n=parseFloat(v); return isNaN(n)?null:n;
+}
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = ()=> Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const pad = n=>String(n).padStart(2,"0");
+const tagKey = d=>{d=new Date(d);return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());};
+const monatKey = d=>tagKey(d).slice(0,7);
+const MONATE=["Jänner","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const tagLabel = k=>{const [y,m,d]=k.split("-");return d+"."+m+"."+y;};
+const monatLabel = k=>{const [y,m]=k.split("-");return MONATE[+m-1]+" "+y;};
+const WT=["So","Mo","Di","Mi","Do","Fr","Sa"];
+
+let S; // state
+let bon = []; // {pid, menge}
+
+/* ---------- Beispieldaten ---------- */
+function beispiel(){
+  const Z={};
+  Object.entries(BEISPIEL_ZUTATEN).forEach(([k,[name,einheit,bestand,mindest,soll,preis]])=>Z[k]={id:uid(),name,einheit,bestand,mindest,soll,preis});
+  const p=(name,kategorie,preis,rezept)=>({id:uid(),name,kategorie,preis,rezept:rezept.map(([k,m])=>({zid:Z[k].id,menge:m}))});
+  const P=[
+    p("Wiener Schnitzel vom Schwein","Speisen",14.90,[["schnitzel",0.2],["semmel",0.03],["eier",1],["mehl",0.02],["oel",0.05],["kartoffel",0.25]]),
+    p("Rindsgulasch mit Semmel","Speisen",13.50,[["rind",0.22],["zwiebel",0.15],["brot",1]]),
+    p("Käsekrainer mit Brot","Speisen",6.90,[["krainer",1],["brot",1],["senf",1]]),
+    p("Backhendl mit Salat","Speisen",15.50,[["huhn",0.22],["semmel",0.03],["eier",1],["mehl",0.02],["oel",0.05],["salat",0.25]]),
+    p("Pommes","Beilagen",4.50,[["pommes",0.2],["oel",0.03],["senf",1]]),
+    p("Gemischter Salat","Beilagen",5.20,[["salat",0.3],["tomaten",0.08],["gurke",0.25]]),
+    p("Bier 0,5 l","Getränke",5.20,[["bier",0.5]]),
+    p("Cola 0,33 l","Getränke",3.90,[["cola",1]]),
+    p("G'spritzter 0,25 l","Getränke",3.60,[["wein",0.125],["mineral",0.125]]),
+    p("Mineral 0,5 l","Getränke",3.20,[["mineral",0.5]]),
+    p("Melange","Getränke",4.20,[["kaffee",0.009],["milch",0.12]]),
+  ];
+  // Verkäufe der letzten 45 Tage simulieren
+  const gewicht=[9,6,5,4,8,4,14,6,6,4,5];
+  const sum=gewicht.reduce((a,b)=>a+b,0);
+  const V=[]; const heute=new Date(); let seed=7;
+  const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
+  for(let t=45;t>=0;t--){
+    const d=new Date(heute); d.setDate(d.getDate()-t);
+    if(d.getDay()===1) continue; // Montag Ruhetag
+    const wochenende = d.getDay()===5||d.getDay()===6||d.getDay()===0;
+    let anz = Math.round((wochenende?30:18)*(0.75+rnd()*0.5));
+    if(t===0) anz = Math.min(anz, 6); // heute erst ein paar
+    for(let i=0;i<anz;i++){
+      const pos={};
+      const n=1+Math.floor(rnd()*3);
+      for(let j=0;j<n;j++){
+        let r=rnd()*sum,k=0; while(r>gewicht[k]){r-=gewicht[k];k++;}
+        pos[k]=(pos[k]||0)+1+(P[k].kategorie==="Getränke"&&rnd()<.3?1:0);
+      }
+      const zeit=new Date(d); zeit.setHours(11+Math.floor(rnd()*10),Math.floor(rnd()*60),0,0);
+      const positionen=Object.entries(pos).map(([k,m])=>({pid:P[k].id,name:P[k].name,preis:P[k].preis,menge:m,rezept:P[k].rezept}));
+      V.push({id:uid(),zeit:zeit.toISOString(),positionen,summe:runden(positionen.reduce((a,x)=>a+x.preis*x.menge,0))});
+    }
+  }
+  V.sort((a,b)=>a.zeit.localeCompare(b.zeit));
+  // eine frühere Inventur als Beispiel
+  const iz=new Date(heute); iz.setDate(iz.getDate()-10); iz.setHours(9,30,0,0);
+  const ip=[["schnitzel",7.4,7.1],["bier",62,58.5],["eier",84,80],["cola",40,40],["kartoffel",30,29.2],["wein",12,11.5]].map(([k,err,gez])=>{const x=Z[k];return {zid:x.id,name:x.name,einheit:x.einheit,errechnet:err,gezaehlt:gez,preis:x.preis};});
+  return {zutaten:Object.values(Z),produkte:P,verkaeufe:V,letzteSicherung:null,
+    inventuren:[{id:uid(),zeit:iz.toISOString(),positionen:ip}],zugaenge:[],inventurEntwurf:{}};
+}
+// [Name, Einheit, Bestand, Mindest, Soll, Einkaufspreis pro Einheit]
+const BEISPIEL_ZUTATEN={
+  schnitzel:["Schweinefleisch (Schnitzel)","kg",6,4,15,9.5],
+  rind:["Rindfleisch (Gulasch)","kg",5,3,10,14],
+  krainer:["Käsekrainer","Stk",14,20,60,0.95],
+  huhn:["Hühnerbrust","kg",4,2,8,11],
+  kartoffel:["Kartoffeln","kg",22,10,40,1.2],
+  pommes:["Pommes (TK)","kg",9,5,20,2.8],
+  zwiebel:["Zwiebeln","kg",4,3,10,1.5],
+  salat:["Blattsalat","Stk",5,6,20,1.2],
+  tomaten:["Tomaten","kg",3,2,6,3.5],
+  gurke:["Gurken","Stk",8,4,15,0.8],
+  semmel:["Semmelbrösel","kg",3,1,5,2.5],
+  eier:["Eier","Stk",60,30,120,0.3],
+  mehl:["Mehl","kg",6,2,10,0.9],
+  oel:["Frittieröl","l",8,5,20,2.5],
+  brot:["Brot/Gebäck","Stk",25,15,60,0.4],
+  senf:["Senf/Ketchup","Portion",80,40,200,0.1],
+  bier:["Bier (Fass)","l",35,20,100,3.2],
+  cola:["Cola 0,33","Stk",30,24,96,0.75],
+  wein:["Weißwein","l",8,4,20,4],
+  mineral:["Mineralwasser","l",30,20,60,0.5],
+  kaffee:["Kaffeebohnen","kg",1.5,1,4,22],
+  milch:["Milch","l",6,4,12,1.3],
+};
+// ältere Daten auf den neuen Stand bringen
+function migrieren(d){
+  const std={}; Object.values(BEISPIEL_ZUTATEN).forEach(a=>std[a[0]]=a[5]);
+  const zz=v=>{const n=Number(v);return isFinite(n)?n:0;};
+  d.zutaten=(d.zutaten||[]).filter(z=>z&&z.id).map(z=>({...z,name:String(z.name??"?"),einheit:String(z.einheit??"Stk"),bestand:zz(z.bestand),mindest:zz(z.mindest),soll:zz(z.soll),preis:z.preis==null?(std[z.name]??0):zz(z.preis)}));
+  d.produkte=(d.produkte||[]).filter(p=>p&&p.id).map(p=>({...p,name:String(p.name??"?"),preis:zz(p.preis),rezept:Array.isArray(p.rezept)?p.rezept.filter(r=>r&&r.zid).map(r=>({zid:r.zid,menge:zz(r.menge)})):[]}));
+  d.verkaeufe=(d.verkaeufe||[]).filter(v=>v&&v.zeit&&!isNaN(new Date(v.zeit))&&Array.isArray(v.positionen)).map(v=>({...v,summe:zz(v.summe),positionen:v.positionen.filter(Boolean).map(p=>({...p,name:String(p.name??"?"),preis:zz(p.preis),menge:zz(p.menge),rezept:Array.isArray(p.rezept)?p.rezept:[]}))}));
+  const gueltig=t=>t&&!isNaN(new Date(t));
+  d.verkaeufe.forEach(v=>{ if(!v.id) v.id=uid(); });
+  d.inventuren=(Array.isArray(d.inventuren)?d.inventuren:[]).filter(i=>i&&gueltig(i.zeit)&&Array.isArray(i.positionen)).map(i=>({...i,id:i.id||uid(),
+    positionen:i.positionen.filter(Boolean).map(p=>({...p,name:String(p.name??"?"),einheit:String(p.einheit??""),errechnet:zz(p.errechnet),gezaehlt:zz(p.gezaehlt),preis:zz(p.preis)}))}));
+  d.zugaenge=(Array.isArray(d.zugaenge)?d.zugaenge:[]).filter(x=>x&&gueltig(x.zeit)).map(x=>({...x,name:String(x.name??"?"),einheit:String(x.einheit??""),menge:zz(x.menge),preis:zz(x.preis)}));
+  const ie=d.inventurEntwurf; d.inventurEntwurf={};
+  if(ie&&typeof ie==="object"&&!Array.isArray(ie)) Object.entries(ie).forEach(([k,v])=>{ if(typeof v==="string"||typeof v==="number") d.inventurEntwurf[k]=String(v); });
+  d.letzteSicherung=gueltig(d.letzteSicherung)?d.letzteSicherung:null;
+  return d;
+}
+function runden(n){return Math.round(n*100)/100;}
+
+/* ---------- Speicher ---------- */
+/* Online-Modus: der Server setzt data-online und window.UMSATZ_START={kunde,version,daten,maxGeraete} */
+const ONLINE = document.documentElement.hasAttribute("data-online") && window.UMSATZ_START ? window.UMSATZ_START : null;
+const sync = {version: ONLINE?ONLINE.version:0, dirty:false, laeuft:false, timer:null, storniert:new Set(), basisIds:new Set(), abgemeldet:false};
+const OFFEN_KEY = ONLINE ? KEY+"-offen-"+ONLINE.kunde.id : null;
+function laden(){
+  if(ONLINE){
+    const server = ONLINE.daten || {zutaten:[],produkte:[],verkaeufe:[]};
+    sync.basisIds = new Set((server.verkaeufe||[]).map(v=>v&&v.id));
+    // ungespeicherte Änderungen von diesem Gerät (z. B. offline gebucht)?
+    let offen=null; try{ offen=JSON.parse(localStorage.getItem(OFFEN_KEY)||"null"); }catch(e){}
+    if(offen&&offen.daten){
+      sync.dirty=true; (offen.storniert||[]).forEach(id=>sync.storniert.add(id));
+      if(offen.basis===ONLINE.version) return offen.daten;
+      return zusammenfuehren(offen.daten, server, new Set(offen.basisIds||[]));
+    }
+    return server;
+  }
+  try{ const s=localStorage.getItem(KEY); if(s) return JSON.parse(s); }catch(e){}
+  return null;
+}
+// lokale Daten + neuerer Serverstand: Verkäufe vom anderen Gerät übernehmen (inkl. Lagerverbrauch), dort stornierte entfernen
+function zusammenfuehren(lokal, server, basisIds){
+  const l = JSON.parse(JSON.stringify(lokal));
+  l.verkaeufe = Array.isArray(l.verkaeufe)?l.verkaeufe:[]; l.zutaten = Array.isArray(l.zutaten)?l.zutaten:[];
+  const sv = Array.isArray(server&&server.verkaeufe)?server.verkaeufe.filter(v=>v&&v.id):[];
+  const lokalIds = new Set(l.verkaeufe.map(v=>v&&v.id)), serverIds = new Set(sv.map(v=>v.id));
+  const bestand=(pos,f)=>(pos||[]).forEach(p=>(p&&Array.isArray(p.rezept)?p.rezept:[]).forEach(r=>{const z=l.zutaten.find(z=>z.id===r.zid); if(z) z.bestand=Math.round(((+z.bestand||0)+f*(+r.menge||0)*(+p.menge||0))*1000)/1000;}));
+  sv.forEach(v=>{ if(!lokalIds.has(v.id)&&!sync.storniert.has(v.id)&&!basisIds.has(v.id)){ l.verkaeufe.push(v); bestand(v.positionen,-1); } });
+  l.verkaeufe = l.verkaeufe.filter(v=>{ if(v&&basisIds.has(v.id)&&!serverIds.has(v.id)){ bestand(v.positionen,+1); return false; } return true; });
+  l.verkaeufe.sort((a,b)=>String(a.zeit).localeCompare(String(b.zeit)));
+  return l;
+}
+const inVorschau=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
+let speicherOk=true;
+try{ localStorage.setItem(KEY+"-test","1"); localStorage.removeItem(KEY+"-test"); }catch(e){ speicherOk=false; }
+function speichern(){
+  if(ONLINE){ sync.dirty=true; offenMerken(); setSync("Wird gespeichert …"); clearTimeout(sync.timer); sync.timer=setTimeout(hochladen,600); return; }
+  if(!speicherOk) return;
+  try{ localStorage.setItem(KEY,JSON.stringify(S)); }
+  catch(e){ toast("⚠️ Speichern fehlgeschlagen – bitte Sicherung herunterladen!"); }
+}
+S = (()=>{ try{ const d=laden(); return d?migrieren(d):migrieren(beispiel()); }catch(e){ return migrieren(ONLINE?{zutaten:[],produkte:[],verkaeufe:[]}:beispiel()); } })();
+if(!ONLINE) speichern();
+
+/* ---------- Online: Speichern auf dem Server ---------- */
+function api(method,url,body){
+  return fetch(url,{method,credentials:"same-origin",headers:{"content-type":"application/json","x-umsatzplanner":"1"},body:body===undefined?undefined:JSON.stringify(body)});
+}
+function setSync(t){ const el=document.getElementById("syncStatus"); if(el) el.textContent=t; }
+function offenMerken(){ if(!ONLINE) return; try{ localStorage.setItem(OFFEN_KEY,JSON.stringify({basis:sync.version,basisIds:[...sync.basisIds],storniert:[...sync.storniert],daten:S})); }catch(e){} }
+function abgemeldet(text){
+  if(sync.abgemeldet) return; sync.abgemeldet=true;
+  document.getElementById("sperreText").textContent=text||"Du wurdest abgemeldet. Bitte neu anmelden. Nicht gespeicherte Änderungen bleiben auf diesem Gerät und werden danach übertragen.";
+  document.getElementById("sperre").hidden=false;
+}
+async function hochladen(){
+  if(!ONLINE||sync.laeuft||!sync.dirty||sync.abgemeldet) return;
+  sync.laeuft=true; sync.dirty=false;
+  const gesendet=S, ids=new Set(S.verkaeufe.map(v=>v.id));
+  try{
+    const r=await api("PUT","/api/daten",{version:sync.version,daten:gesendet});
+    if(r.status===409){
+      const j=await r.json();
+      S=migrieren(zusammenfuehren(S,j.daten||{},sync.basisIds));
+      sync.version=j.version; sync.basisIds=new Set(((j.daten&&j.daten.verkaeufe)||[]).map(v=>v&&v.id)); sync.dirty=true;
+      offenMerken(); alles(); toast("Daten vom anderen Gerät übernommen");
+    } else if(r.status===401){ sync.dirty=true; abgemeldet(); }
+    else if(r.status===413){ sync.dirty=true; setSync("⚠️ Zu viele Daten zum Speichern"); toast("⚠️ Speichern fehlgeschlagen: Datenmenge zu groß. Bitte Sicherung herunterladen."); }
+    else if(r.ok){
+      const j=await r.json(); sync.version=j.version; sync.basisIds=ids; sync.storniert.clear();
+      if(sync.dirty) offenMerken(); else { try{ localStorage.removeItem(OFFEN_KEY); }catch(e){} }
+      setSync(sync.dirty?"Wird gespeichert …":"✓ Gespeichert");
+    } else throw new Error(r.status);
+  }catch(e){
+    sync.dirty=true; setSync("⚠️ Offline – wird nachgeholt");
+  }finally{
+    sync.laeuft=false;
+    if(sync.dirty&&!sync.abgemeldet){ clearTimeout(sync.timer); sync.timer=setTimeout(hochladen, navigator.onLine===false?5000:(document.getElementById("syncStatus").textContent.startsWith("⚠️")?5000:300)); }
+  }
+}
+function beschaeftigt(){
+  const a=document.activeElement;
+  return !document.getElementById("dlg").hidden || !document.getElementById("frage").hidden ||
+    (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.closest("main"));
+}
+async function abgleichen(){
+  if(!ONLINE||sync.laeuft||sync.dirty||sync.abgemeldet||document.hidden) return;
+  try{
+    const r=await fetch("/api/daten?seit="+sync.version,{credentials:"same-origin",cache:"no-store"});
+    if(r.status===401) return abgemeldet();
+    if(r.status!==200) return;
+    const j=await r.json();
+    if(sync.dirty||sync.laeuft||j.version<=sync.version) return;
+    if(beschaeftigt()) return; // später nochmal, damit niemand beim Tippen gestört wird
+    S=migrieren(j.daten||{zutaten:[],produkte:[],verkaeufe:[]}); sync.version=j.version;
+    sync.basisIds=new Set(S.verkaeufe.map(v=>v.id));
+    alles(); setSync("✓ Aktualisiert");
+  }catch(e){}
+}
+if(ONLINE){
+  setInterval(abgleichen,15000);
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ abgleichen(); if(sync.dirty) hochladen(); } });
+  window.addEventListener("online",()=>{ if(sync.dirty) hochladen(); });
+  window.addEventListener("beforeunload",e=>{ if(sync.dirty||sync.laeuft){ e.preventDefault(); e.returnValue=""; } });
+  if(sync.dirty) setTimeout(hochladen,500); else setTimeout(()=>setSync("✓ Gespeichert"),0);
+}
+
+/* ---------- Helfer ---------- */
+const zutat = id=>S.zutaten.find(z=>z.id===id);
+const produkt = id=>S.produkte.find(p=>p.id===id);
+const rezeptKosten = rezept=>(rezept||[]).reduce((a,r)=>{const z=zutat(r.zid);return a+(z?(z.preis||0)*r.menge:0);},0);
+const posKosten = pos=> pos.kosten!=null ? pos.kosten : rezeptKosten(pos.rezept); // pro Stück
+const verkaufKosten = v=> v.positionen.reduce((a,p)=>a+posKosten(p)*p.menge,0);
+const prozent = x=> isFinite(x) ? num(x*100,1)+" %" : "–";
+function quotePill(q){ if(!isFinite(q)||q<=0) return `<span class="pill">–</span>`; return `<span class="pill ${q<=0.3?"ok":(q<=0.4?"warn":"bad")}">${prozent(q)}</span>`; }
+const zielBestand = z=> z.soll>z.mindest ? z.soll : Math.max(z.mindest*2, z.mindest+1);
+const kaufMenge = z=> Math.max(zielBestand(z)-z.bestand,0);
+function status(z){ if(z.neu) return "warn"; if(z.bestand<=0) return "bad"; if(z.bestand<=z.mindest) return "warn"; return "ok"; }
+function statusText(z){ if(z.neu) return "Noch nicht gezählt"; return {bad:"Aus",warn:"Nachkaufen",ok:"OK"}[status(z)]; }
+function portionenMoeglich(p){
+  if(!p.rezept.length) return Infinity;
+  return Math.min(...p.rezept.map(r=>{const z=zutat(r.zid);return z&&r.menge>0&&!z.neu?Math.floor(z.bestand/r.menge+1e-9):Infinity;}));
+}
+function verbrauchBuchen(positionen,faktor){ // faktor -1 = abziehen, +1 = zurückgeben
+  positionen.forEach(pos=>{
+    (pos.rezept||[]).forEach(r=>{const z=zutat(r.zid); if(z) z.bestand=Math.round((z.bestand+faktor*r.menge*pos.menge)*1000)/1000;});
+  });
+}
+let toastT;
+function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("zeigen");clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove("zeigen"),2200);}
+
+/* ---------- Tabs ---------- */
+$("#nav").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-tab]"); if(!b) return;
+  document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("aktiv",x===b));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("aktiv",t.id==="tab-"+b.dataset.tab));
+  alles();
+});
+
+/* ---------- Kassa ---------- */
+function renderKassa(){
+  const kats=[...new Set(S.produkte.map(p=>p.kategorie||"Sonstiges"))];
+  $("#produktGrid").innerHTML = S.produkte.length ? kats.map(k=>`<div class="kat">${esc(k)}</div><div class="produkte">`+
+    S.produkte.filter(p=>(p.kategorie||"Sonstiges")===k).map(p=>{
+      const m=portionenMoeglich(p);
+      const cls = m<=0?"leer":(m<=5?"knapp":"");
+      const hinweis = m<=0?"⚠️ Zutat aus":(m<=5?`noch ca. ${m}×`:"");
+      return `<button class="prod ${cls}" data-pid="${p.id}"><b>${esc(p.name)}</b><span>${eur.format(p.preis)} ${hinweis?"· "+hinweis:""}</span></button>`;
+    }).join("")+`</div>`).join("") : `<p class="muted">Noch keine Artikel. Spiel deine Speisekarte unter <a href="#" data-gehe="import">Einstellungen → Speisekarte &amp; Rezepte</a> ein oder lege Artikel unter „Lager &amp; Rezepte“ an.</p>`;
+  // Bon
+  bon = bon.filter(b=>produkt(b.pid));
+  $("#bonListe").innerHTML = bon.length ? bon.map((b,i)=>{const p=produkt(b.pid);return `<div class="pos">
+      <div class="name">${esc(p.name)}<br><span class="muted">${eur.format(p.preis)}</span></div>
+      <div class="menge"><button type="button" data-minus="${i}">−</button><b>${b.menge}</b><button type="button" data-plus="${i}">+</button></div>
+      <b style="width:84px;text-align:right">${eur.format(p.preis*b.menge)}</b></div>`;}).join("")
+    : `<div class="leerbon">Noch nichts ausgewählt</div>`;
+  const summe=bon.reduce((a,b)=>a+produkt(b.pid).preis*b.menge,0);
+  $("#bonSumme").textContent=eur.format(summe);
+  $("#bonBuchen").disabled=!bon.length; $("#bonLeeren").disabled=!bon.length;
+  const kassaAktiv=$("#tab-kassa").classList.contains("aktiv");
+  document.body.classList.toggle("kassaAktiv",kassaAktiv);
+  $("#mobilbar").classList.toggle("weg",!bon.length||!kassaAktiv);
+  $("#mbAnz").textContent=bon.reduce((a,b)=>a+b.menge,0)+" Artikel"; $("#mbSumme").textContent=eur.format(summe);
+  // Heute
+  const hk=tagKey(new Date());
+  const heute=S.verkaeufe.filter(v=>tagKey(v.zeit)===hk).reverse();
+  $("#heuteSumme").textContent=eur.format(heute.reduce((a,v)=>a+v.summe,0))+" · "+heute.length+" Buchungen";
+  $("#heuteTabelle").innerHTML = heute.length ? `<tr><th>Zeit</th><th>Artikel</th><th class="r">Betrag</th><th></th></tr>`+
+    heute.map(v=>`<tr><td>${new Date(v.zeit).toLocaleTimeString("de-AT",{hour:"2-digit",minute:"2-digit"})}</td>
+      <td>${v.positionen.map(p=>p.menge+"× "+esc(p.name)).join(", ")}</td><td class="r"><b>${eur.format(v.summe)}</b></td>
+      <td class="r"><button class="btn klein danger" data-storno="${v.id}">Storno</button></td></tr>`).join("")
+    : `<tr><td class="muted">Heute noch nichts gebucht.</td></tr>`;
+}
+$("#produktGrid").addEventListener("click",e=>{
+  const b=e.target.closest("[data-pid]"); if(!b) return;
+  const x=bon.find(y=>y.pid===b.dataset.pid); if(x) x.menge++; else bon.push({pid:b.dataset.pid,menge:1});
+  renderKassa();
+});
+$("#bonListe").addEventListener("click",e=>{
+  const t=e.target;
+  if(t.dataset.plus!==undefined) bon[+t.dataset.plus].menge++;
+  if(t.dataset.minus!==undefined){const i=+t.dataset.minus;bon[i].menge--; if(bon[i].menge<=0) bon.splice(i,1);}
+  renderKassa();
+});
+$("#mbZeigen").onclick=()=>{const y=$(".bon").getBoundingClientRect().top+window.scrollY-$("header").offsetHeight-12;window.scrollTo({top:y,behavior:"smooth"});};
+$("#mbBuchen").onclick=()=>$("#bonBuchen").click();
+$("#bonLeeren").onclick=()=>{bon=[];renderKassa();};
+$("#bonBuchen").onclick=()=>{
+  if(!bon.length) return;
+  const positionen=bon.map(b=>{const p=produkt(b.pid);return {pid:p.id,name:p.name,preis:p.preis,menge:b.menge,kosten:Math.round(rezeptKosten(p.rezept)*10000)/10000,rezept:p.rezept.map(r=>({...r}))};});
+  const v={id:uid(),zeit:new Date().toISOString(),positionen,summe:runden(positionen.reduce((a,x)=>a+x.preis*x.menge,0))};
+  S.verkaeufe.push(v); verbrauchBuchen(positionen,-1); speichern();
+  bon=[]; toast("✓ Gebucht: "+eur.format(v.summe)); alles();
+};
+$("#heuteTabelle").addEventListener("click",async e=>{
+  const id=e.target.dataset.storno; if(!id) return;
+  const v=S.verkaeufe.find(x=>x.id===id);
+  if(!v||!await frage(`Buchung über ${eur.format(v.summe)} stornieren?\nDie Zutaten kommen zurück ins Lager.`,"Stornieren")) return;
+  verbrauchBuchen(v.positionen,+1); S.verkaeufe=S.verkaeufe.filter(x=>x.id!==id); sync.storniert.add(id); speichern(); toast("Storniert"); alles();
+});
+
+/* ---------- Lager ---------- */
+function renderLager(){
+  const zs=[...S.zutaten].sort((a,b)=>a.name.localeCompare(b.name,"de"));
+  const lagerwert=zs.reduce((a,z)=>a+Math.max(z.bestand,0)*(z.preis||0),0);
+  $("#zutatenTabelle").innerHTML = `<tr><th>Zutat</th><th class="r">Bestand</th><th class="r">Mindest</th><th class="r">Soll</th><th class="r">EK-Preis</th><th class="r">Lagerwert</th><th>Status</th><th></th></tr>`+
+    zs.map(z=>`<tr><td>${esc(z.name)}</td><td class="r"><b>${num(z.bestand,3)}</b> ${esc(z.einheit)}</td><td class="r">${num(z.mindest,3)}</td><td class="r">${num(z.soll,3)}</td>
+      <td class="r">${z.preis?eurFein(z.preis)+"/"+esc(z.einheit):`<span class="pill warn">fehlt</span>`}</td><td class="r">${eur.format(Math.max(z.bestand,0)*(z.preis||0))}</td>
+      <td><span class="pill ${status(z)}">${statusText(z)}</span></td>
+      <td class="r" style="white-space:nowrap"><button class="btn klein" data-zugang="${z.id}">+ Zugang</button> <button class="btn klein" data-zedit="${z.id}">Bearbeiten</button></td></tr>`).join("")+
+    `<tfoot><tr><td colspan="5">Lagerwert gesamt</td><td class="r">${eur.format(lagerwert)}</td><td colspan="2"></td></tr></tfoot>`;
+  $("#produkteTabelle").innerHTML = `<tr><th>Artikel</th><th>Kategorie</th><th class="r">Preis</th><th class="r">Wareneinsatz</th><th class="r">Rohertrag</th><th>Quote</th><th>Rezept (pro Portion)</th><th></th></tr>`+
+    S.produkte.map(p=>{const k=rezeptKosten(p.rezept);return `<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.kategorie||"")}</td><td class="r">${eur.format(p.preis)}</td>
+      <td class="r">${eur.format(k)}</td><td class="r"><b>${eur.format(p.preis-k)}</b></td><td>${quotePill(k/p.preis)}</td>
+      <td class="muted">${p.rezept.map(r=>{const z=zutat(r.zid);return z?num(r.menge,3)+" "+esc(z.einheit)+" "+esc(z.name):"";}).filter(Boolean).join(", ")||"–"}</td>
+      <td class="r"><button class="btn klein" data-pedit="${p.id}">Bearbeiten</button></td></tr>`;}).join("");
+}
+$("#tab-lager").addEventListener("click",e=>{
+  const d=e.target.dataset;
+  if(d.zugang) dlgZugang(zutat(d.zugang));
+  if(d.zedit) dlgZutat(zutat(d.zedit));
+  if(d.pedit) dlgProdukt(produkt(d.pedit));
+});
+$("#neueZutat").onclick=()=>dlgZutat(null);
+$("#neuesProdukt").onclick=()=>dlgProdukt(null);
+
+const dlg=$("#dlg"), form=$("#dlgForm");
+function schliessen(){ dlg.hidden=true; form.innerHTML=""; form.oninput=form.onchange=form.onclick=form.onkeydown=null; }
+function oeffnen(html,onOk){
+  form.oninput=form.onchange=null;
+  form.innerHTML=html; dlg.hidden=false;
+  const ok=()=>{
+    const leer=[...form.querySelectorAll("[required]")].find(i=>!i.value.trim());
+    if(leer){ leer.style.borderColor="var(--bad)"; leer.focus(); toast("Bitte ausfüllen"); return; }
+    const falsch=[...form.querySelectorAll('input[inputmode="decimal"]')].find(i=>i.value.trim()!==""&&zahl(i.value)==null);
+    if(falsch){ falsch.style.borderColor="var(--bad)"; falsch.focus(); toast("Bitte eine Zahl eingeben, z. B. 2,5"); return; }
+    if(onOk()===false) return;
+    schliessen(); speichern(); alles();
+  };
+  form.onclick=e=>{ const a=e.target.closest("[data-act]"); if(!a) return;
+    if(a.dataset.act==="ok") ok(); else if(a.dataset.act==="x") schliessen(); };
+  form.onkeydown=e=>{ if(e.key==="Enter"&&e.target.tagName==="INPUT"){ e.preventDefault(); ok(); } };
+  const f=form.querySelector("input"); if(f){ f.focus(); f.select&&f.select(); }
+}
+let downAuf=null;
+dlg.addEventListener("mousedown",e=>downAuf=e.target);
+dlg.addEventListener("click",e=>{ if(e.target===dlg && downAuf===dlg) schliessen(); });
+$("#frage").addEventListener("mousedown",e=>downAuf=e.target);
+$("#frage").addEventListener("click",e=>{ if(e.target===$("#frage") && downAuf===e.target) $("#frageNein").click(); });
+document.addEventListener("keydown",e=>{
+  const frageOffen=!$("#frage").hidden, dlgOffen=!dlg.hidden;
+  if(!frageOffen&&!dlgOffen) return;
+  const box=frageOffen?$("#frage"):dlg;
+  if(e.key==="Escape"){ e.preventDefault(); if(frageOffen) $("#frageNein").click(); else schliessen(); return; }
+  const fok=[...box.querySelectorAll('button,input,select,textarea')].filter(x=>!x.disabled&&x.offsetParent!==null);
+  if(e.key==="Tab"&&fok.length){
+    const i=fok.indexOf(document.activeElement);
+    if(i===-1||(!e.shiftKey&&i===fok.length-1)||(e.shiftKey&&i===0)){ e.preventDefault(); (e.shiftKey&&i!==-1?fok[fok.length-1]:fok[0]).focus(); }
+    return;
+  }
+  if(!box.contains(e.target)){ e.preventDefault(); if(fok.length) fok[0].focus(); }
+});
+function frage(text,ja="OK"){
+  return new Promise(res=>{
+    $("#frageText").textContent=text; $("#frageJa").textContent=ja; $("#frage").hidden=false; $("#frageJa").focus();
+    const fertig=v=>{ $("#frage").hidden=true; $("#frageJa").onclick=$("#frageNein").onclick=null; res(v); };
+    $("#frageJa").onclick=()=>fertig(true); $("#frageNein").onclick=()=>fertig(false);
+  });
+}
+const feld=n=>form.querySelector(`[name="${n}"]`);
+const fval=n=>feld(n).value.trim();
+const fnum=n=>zahl(feld(n).value)??0;
+
+function dlgZugang(z){
+  oeffnen(`<h2>Zugang: ${esc(z.name)}</h2><p class="muted">Aktuell: ${num(z.bestand,3)} ${esc(z.einheit)}</p>
+    <div class="row"><div class="feld grow"><label>Wie viel ist dazugekommen? (${esc(z.einheit)})</label><input name="m" inputmode="decimal" required value="${inp(Math.ceil(kaufMenge(z)*10-1e-6)/10,3)}"></div>
+    <div class="feld grow"><label>Einkaufspreis pro ${esc(z.einheit)} (€)</label><input name="ek" inputmode="decimal" value="${inp(z.preis||0,4)}"></div></div>
+    <div class="row"><button class="btn grow" type="button" data-act="x">Abbrechen</button><button type="button" class="btn primary grow" data-act="ok">Hinzufügen</button></div>`,
+    ()=>{const m=fnum("m"), ek=fnum("ek"); if(m<=0){ toast("Bitte eine Menge größer 0 eingeben"); return false; }
+      z.bestand=Math.round((z.bestand+m)*1000)/1000; if(ek>0) z.preis=ek; delete z.neu;
+      S.zugaenge.push({id:uid(),zeit:new Date().toISOString(),zid:z.id,name:z.name,einheit:z.einheit,menge:m,preis:z.preis||0});
+      toast("Lager aktualisiert");});
+}
+function dlgZutat(z){
+  const neu=!z; z=z||{id:uid(),name:"",einheit:"kg",bestand:0,mindest:0,soll:0,preis:0};
+  oeffnen(`<h2>${neu?"Neue Zutat":"Zutat bearbeiten"}</h2>
+    <div class="feld"><label>Name</label><input name="name" required value="${esc(z.name)}"></div>
+    <div class="row"><div class="feld grow"><label>Einheit</label><input name="einheit" list="einheiten" value="${esc(z.einheit)}"></div>
+    <div class="feld grow"><label>Bestand jetzt</label><input name="bestand" inputmode="decimal" value="${inp(z.bestand,3)}"></div>
+    <div class="feld grow"><label>Einkaufspreis pro Einheit (€)</label><input name="preis" inputmode="decimal" value="${inp(z.preis||0,4)}"></div></div>
+    <div class="row"><div class="feld grow"><label>Mindestbestand (ab hier nachkaufen)</label><input name="mindest" inputmode="decimal" value="${inp(z.mindest,3)}"></div>
+    <div class="feld grow"><label>Sollbestand (auffüllen bis)</label><input name="soll" inputmode="decimal" value="${inp(z.soll,3)}"></div></div>
+    <datalist id="einheiten"><option>kg</option><option>g</option><option>l</option><option>Stk</option><option>Portion</option><option>Pkg</option></datalist>
+    <div class="row">${neu?"":`<button class="btn danger" type="button" data-act="del">Löschen</button>`}<span class="grow"></span>
+    <button class="btn" type="button" data-act="x">Abbrechen</button><button type="button" class="btn primary" data-act="ok">Speichern</button></div>`,
+    ()=>{ Object.assign(z,{name:fval("name"),einheit:fval("einheit")||"Stk",bestand:fnum("bestand"),mindest:fnum("mindest"),soll:fnum("soll"),preis:fnum("preis")});
+      if(z.soll<z.mindest) z.soll=z.mindest; delete z.neu; if(neu) S.zutaten.push(z); });
+  form.querySelector('[data-act="del"]')?.addEventListener("click",async()=>{
+    const benutzt=S.produkte.filter(p=>p.rezept.some(r=>r.zid===z.id)).map(p=>p.name);
+    if(!await frage(`„${z.name}“ löschen?`+(benutzt.length?`\nWird aus den Rezepten entfernt: ${benutzt.join(", ")}`:""),"Löschen")) return;
+    S.zutaten=S.zutaten.filter(x=>x.id!==z.id); delete S.inventurEntwurf[z.id]; S.produkte.forEach(p=>p.rezept=p.rezept.filter(r=>r.zid!==z.id));
+    schliessen(); speichern(); alles(); toast("Zutat gelöscht");
+  });
+}
+function dlgProdukt(p){
+  const neu=!p; p=p||{id:uid(),name:"",kategorie:"Speisen",preis:0,rezept:[]};
+  const kats=[...new Set(S.produkte.map(x=>x.kategorie).filter(Boolean))];
+  const zopts=sel=>`<option value="">– Zutat wählen –</option>`+[...S.zutaten].sort((a,b)=>a.name.localeCompare(b.name,"de")).map(z=>`<option value="${z.id}" ${z.id===sel?"selected":""}>${esc(z.name)} (${esc(z.einheit)})</option>`).join("");
+  const zeile=r=>`<div class="rz"><select name="rz">${zopts(r.zid)}</select><input name="rm" inputmode="decimal" placeholder="Menge" value="${r.menge?inp(r.menge,4):""}" style="width:100px"><button type="button" class="btn klein" data-weg>✕</button></div>`;
+  oeffnen(`<h2>${neu?"Neuer Artikel":"Artikel bearbeiten"}</h2>
+    <div class="feld"><label>Name</label><input name="name" required value="${esc(p.name)}"></div>
+    <div class="row"><div class="feld grow"><label>Kategorie</label><input name="kat" list="kats" value="${esc(p.kategorie||"")}"></div>
+    <div class="feld grow"><label>Preis (€)</label><input name="preis" inputmode="decimal" required value="${inp(p.preis,2)}"></div></div>
+    <datalist id="kats">${kats.map(k=>`<option>${esc(k)}</option>`).join("")}</datalist>
+    <h3>Rezept – Verbrauch pro Portion</h3><div id="rzListe">${(p.rezept.length?p.rezept:[{zid:"",menge:0}]).map(zeile).join("")}</div>
+    <button type="button" class="btn klein" id="rzPlus">+ Zutat</button>
+    <p id="rzKosten" style="margin:12px 0 0"></p>
+    <div class="row" style="margin-top:16px">${neu?"":`<button class="btn danger" type="button" data-act="del">Löschen</button>`}<span class="grow"></span>
+    <button class="btn" type="button" data-act="x">Abbrechen</button><button type="button" class="btn primary" data-act="ok">Speichern</button></div>`,
+    ()=>{
+      const zs=[...form.querySelectorAll('[name=rz]')], ms=[...form.querySelectorAll('[name=rm]')];
+      const rezept=zs.map((s,i)=>({zid:s.value,menge:zahl(ms[i].value)||0})).filter(r=>r.zid&&r.menge>0);
+      Object.assign(p,{name:fval("name"),kategorie:fval("kat")||"Sonstiges",preis:runden(fnum("preis")),rezept});
+      if(neu) S.produkte.push(p);
+    });
+  const kostenZeigen=()=>{
+    const zs=[...form.querySelectorAll('[name=rz]')], ms=[...form.querySelectorAll('[name=rm]')];
+    const k=rezeptKosten(zs.map((s,i)=>({zid:s.value,menge:zahl(ms[i].value)||0})));
+    const pr=fnum("preis");
+    $("#rzKosten").innerHTML=`Wareneinsatz: <b>${eur.format(k)}</b> · Rohertrag: <b>${eur.format(pr-k)}</b> · Quote: ${quotePill(pr?k/pr:NaN)}`;
+  };
+  $("#rzPlus").onclick=()=>{$("#rzListe").insertAdjacentHTML("beforeend",zeile({zid:"",menge:0}));kostenZeigen();};
+  $("#rzListe").addEventListener("click",e=>{if(e.target.dataset.weg!==undefined){e.target.parentElement.remove();kostenZeigen();$("#rzPlus").focus();}});
+  form.oninput=kostenZeigen; form.onchange=kostenZeigen; kostenZeigen();
+  form.querySelector('[data-act="del"]')?.addEventListener("click",async()=>{
+    if(!await frage(`Artikel „${p.name}“ löschen? Bisherige Verkäufe bleiben in der Statistik.`,"Löschen")) return;
+    S.produkte=S.produkte.filter(x=>x.id!==p.id); schliessen(); speichern(); alles(); toast("Artikel gelöscht");
+  });
+}
+
+/* ---------- Inventur ---------- */
+const parseZahl=zahl;
+function invZeile(z){
+  const g=parseZahl(S.inventurEntwurf[z.id]);
+  const d=g==null?null:g-z.bestand;
+  const cls=d==null||Math.abs(d)<1e-9?"":(d<0?"diffminus":"diffplus");
+  return `<tr class="${cls}" data-zrow="${z.id}"><td>${esc(z.name)}${z.neu?' <span class="pill warn">noch nicht gezählt</span>':""}</td><td class="r">${num(z.bestand,3)} ${esc(z.einheit)}</td>
+    <td class="r"><input class="zaehl" inputmode="decimal" data-zaehl="${z.id}" value="${esc(S.inventurEntwurf[z.id]??"")}" placeholder="–"> ${esc(z.einheit)}</td>
+    <td class="r d">${d==null?"":(d>0?"+":"")+num(d,3)+" "+esc(z.einheit)}</td><td class="r d">${d==null?"":(d>0?"+":"")+eur.format(d*(z.preis||0))}</td></tr>`;
+}
+function invInfo(){
+  let n=0,w=0; S.zutaten.forEach(z=>{const g=parseZahl(S.inventurEntwurf[z.id]); if(g!=null){n++; w+=(g-z.bestand)*(z.preis||0);}});
+  $("#invInfo").innerHTML=`<b>${n}</b> von ${S.zutaten.length} Zutaten gezählt`+(n?` · Abweichung gesamt: <b style="color:${w<0?"var(--bad)":"var(--ok)"}">${w>0?"+":""}${eur.format(w)}</b>`:"");
+  $("#invAbschliessen").disabled=!n;
+}
+function renderInventur(){
+  const zs=[...S.zutaten].sort((a,b)=>a.name.localeCompare(b.name,"de"));
+  $("#invTabelle").innerHTML=`<tr><th>Zutat</th><th class="r">Laut System</th><th class="r">Gezählt</th><th class="r">Abweichung</th><th class="r">Wert</th></tr>`+zs.map(invZeile).join("");
+  invInfo();
+  const inv=[...S.inventuren].reverse();
+  $("#invHistorie").innerHTML = inv.length ? `<tr><th>Datum</th><th class="r">Gezählt</th><th class="r">Mit Abweichung</th><th class="r">Schwund/Plus</th><th></th></tr>`+
+    inv.map(i=>{const w=i.positionen.reduce((a,p)=>a+(p.gezaehlt-p.errechnet)*(p.preis||0),0);
+      const abw=i.positionen.filter(p=>Math.abs(p.gezaehlt-p.errechnet)>1e-9);
+      return `<tr><td>${new Date(i.zeit).toLocaleString("de-AT",{dateStyle:"medium",timeStyle:"short"})}</td><td class="r">${i.positionen.length} Zutaten</td><td class="r">${abw.length}</td>
+        <td class="r"><b style="color:${w<0?"var(--bad)":"var(--ok)"}">${w>0?"+":""}${eur.format(w)}</b></td><td class="r"><button class="btn klein" data-invdetail="${i.id}">Details</button></td></tr>
+        <tr class="detail" id="invd-${i.id}" hidden><td colspan="5">${abw.length?abw.sort((a,b)=>(a.gezaehlt-a.errechnet)*a.preis-(b.gezaehlt-b.errechnet)*b.preis).map(p=>{const d=p.gezaehlt-p.errechnet;
+          return `${esc(p.name)}: System ${num(p.errechnet,3)}, gezählt ${num(p.gezaehlt,3)} ${esc(p.einheit)} → <b>${d>0?"+":""}${num(d,3)} ${esc(p.einheit)}</b> (${d>0?"+":""}${eur.format(d*(p.preis||0))})`;}).join("<br>"):"Keine Abweichungen 👍"}</td></tr>`;}).join("")
+    : `<tr><td class="muted">Noch keine Inventur gemacht.</td></tr>`;
+}
+$("#invTabelle").addEventListener("input",e=>{
+  const id=e.target.dataset.zaehl; if(!id) return;
+  S.inventurEntwurf[id]=e.target.value; if(e.target.value.trim()==="") delete S.inventurEntwurf[id]; speichern();
+  const z=zutat(id), tr=e.target.closest("tr"), tmp=document.createElement("tbody"); tmp.innerHTML=invZeile(z);
+  const neu=tmp.firstElementChild; tr.className=neu.className; tr.cells[3].innerHTML=neu.cells[3].innerHTML; tr.cells[4].innerHTML=neu.cells[4].innerHTML;
+  invInfo();
+});
+$("#invTabelle").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.dataset.zaehl){ const ins=[...document.querySelectorAll("[data-zaehl]")]; const n=ins[ins.indexOf(e.target)+1]; if(n) n.focus(); else e.target.blur(); }});
+$("#invHistorie").addEventListener("click",e=>{const id=e.target.dataset.invdetail; if(id){const r=$("#invd-"+id); r.hidden=!r.hidden;}});
+$("#invLeeren").onclick=async()=>{ if(await frage("Alle Zähl-Eingaben löschen?","Leeren")){S.inventurEntwurf={};speichern();renderInventur();} };
+$("#invAbschliessen").onclick=async()=>{
+  const pos=S.zutaten.map(z=>({z,g:parseZahl(S.inventurEntwurf[z.id])})).filter(x=>x.g!=null);
+  if(!pos.length) return;
+  if(!await frage(`Inventur abschließen?\nBei ${pos.length} Zutaten wird der gezählte Bestand übernommen.`,"Abschließen")) return;
+  S.inventuren.push({id:uid(),zeit:new Date().toISOString(),positionen:pos.map(({z,g})=>({zid:z.id,name:z.name,einheit:z.einheit,errechnet:z.bestand,gezaehlt:g,preis:z.preis||0}))});
+  pos.forEach(({z,g})=>{z.bestand=g; delete z.neu;});
+  S.inventurEntwurf={}; speichern(); toast("✓ Inventur gespeichert"); alles();
+};
+
+/* ---------- Einkauf ---------- */
+function verbrauchProTag(){
+  const grenze=new Date(); grenze.setDate(grenze.getDate()-14);
+  const m={};
+  S.verkaeufe.filter(v=>new Date(v.zeit)>=grenze).forEach(v=>v.positionen.forEach(pos=>(pos.rezept||[]).forEach(r=>{m[r.zid]=(m[r.zid]||0)+r.menge*pos.menge;})));
+  Object.keys(m).forEach(k=>m[k]/=14);
+  return m;
+}
+const tage=t=>t<1?"heute/morgen":(Math.round(t)===1?"1 Tag":Math.round(t)+" Tagen");
+function renderEinkauf(){
+  const vpt=verbrauchProTag();
+  const liste=S.zutaten.filter(z=>!z.neu&&z.bestand<=z.mindest).sort((a,b)=>(a.bestand/(a.mindest||1))-(b.bestand/(b.mindest||1)));
+  $("#badgeEinkauf").hidden=!liste.length; $("#badgeEinkauf").textContent=liste.length;
+  $("#einkaufTabelle").innerHTML = liste.length ? `<tr><th>Zutat</th><th class="r">Noch da</th><th class="r">Kaufen</th><th>Status</th><th></th></tr>`+
+    liste.map(z=>{const kauf=kaufMenge(z);return `<tr><td><b>${esc(z.name)}</b></td><td class="r">${num(Math.max(z.bestand,0),3)} ${esc(z.einheit)}</td>
+      <td class="r"><b>${num(Math.ceil(kauf*10-1e-6)/10,1)} ${esc(z.einheit)}</b></td><td><span class="pill ${status(z)}">${statusText(z)}</span></td>
+      <td class="r"><button class="btn klein primary" data-gekauft="${z.id}">Eingekauft ✓</button></td></tr>`;}).join("")
+    : `<tr><td class="muted">Alles im grünen Bereich – nichts nachzukaufen. 👍</td></tr>`;
+  const bald=S.zutaten.filter(z=>z.bestand>z.mindest && vpt[z.id]>0).map(z=>({z,tage:(z.bestand-z.mindest)/vpt[z.id],reicht:z.bestand/vpt[z.id]}))
+    .filter(x=>x.tage<=7).sort((a,b)=>a.tage-b.tage);
+  $("#baldTabelle").innerHTML = bald.length ? `<tr><th>Zutat</th><th class="r">Bestand</th><th class="r">Verbrauch/Tag</th><th class="r">Nachkaufen in ca.</th><th class="r">Ganz aus in ca.</th></tr>`+
+    bald.map(x=>`<tr><td>${esc(x.z.name)}</td><td class="r">${num(x.z.bestand,3)} ${esc(x.z.einheit)}</td><td class="r">${num(vpt[x.z.id],2)} ${esc(x.z.einheit)}</td>
+      <td class="r"><b>${tage(x.tage)}</b></td><td class="r">${tage(x.reicht)}</td></tr>`).join("")
+    : `<tr><td class="muted">In der nächsten Woche wird voraussichtlich nichts Weiteres knapp.</td></tr>`;
+  const mk=monatKey(new Date());
+  $("#zugangMonat").textContent="Diesen Monat eingekauft: "+eur.format(S.zugaenge.filter(x=>monatKey(x.zeit)===mk).reduce((a,x)=>a+x.menge*x.preis,0));
+  const zl=[...S.zugaenge].reverse().slice(0,15);
+  $("#zugangTabelle").innerHTML = zl.length ? `<tr><th>Datum</th><th>Zutat</th><th class="r">Menge</th><th class="r">Preis/Einheit</th><th class="r">Kosten</th></tr>`+
+    zl.map(x=>`<tr><td>${new Date(x.zeit).toLocaleDateString("de-AT")}</td><td>${esc(x.name)}</td><td class="r">${num(x.menge,3)} ${esc(x.einheit)}</td><td class="r">${eur.format(x.preis)}</td><td class="r"><b>${eur.format(x.menge*x.preis)}</b></td></tr>`).join("")
+    : `<tr><td class="muted">Noch nichts eingebucht. Wenn du bei einer Zutat „Eingekauft ✓“ oder „+ Zugang“ drückst, steht es hier.</td></tr>`;
+}
+$("#einkaufTabelle").addEventListener("click",e=>{
+  const id=e.target.dataset.gekauft; if(id) dlgZugang(zutat(id));
+});
+
+/* ---------- Umsatz ---------- */
+let uModus="tag";
+$("#umsatzModus").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;uModus=b.dataset.m;
+  [...$("#umsatzModus").children].forEach(x=>x.classList.toggle("aktiv",x===b));renderUmsatz();});
+function gruppe(keyFn){
+  const m={}; S.verkaeufe.forEach(v=>{const k=keyFn(v.zeit);(m[k]=m[k]||{umsatz:0,anzahl:0,stueck:0,kosten:0});m[k].umsatz+=v.summe;m[k].kosten+=verkaufKosten(v);m[k].anzahl++;m[k].stueck+=v.positionen.reduce((a,p)=>a+p.menge,0);});
+  return m;
+}
+function renderUmsatz(){
+  const heute=new Date(), hk=tagKey(heute), mk=monatKey(heute);
+  const gestern=new Date(heute); gestern.setDate(gestern.getDate()-1);
+  const vm=new Date(heute.getFullYear(),heute.getMonth()-1,1);
+  const T=gruppe(tagKey), M=gruppe(monatKey);
+  const u=(o,k)=>(o[k]?o[k].umsatz:0);
+  const tageMitUmsatz=Object.keys(T).filter(k=>k.startsWith(mk)).length||1;
+  $("#umsatzKpis").innerHTML=[
+    ["Heute",eur.format(u(T,hk))],["Gestern",eur.format(u(T,tagKey(gestern)))],
+    ["Dieser Monat",eur.format(u(M,mk))],["Letzter Monat",eur.format(u(M,monatKey(vm)))],
+    ["Ø pro Öffnungstag (Monat)",eur.format(u(M,mk)/tageMitUmsatz)],
+    ["Ø pro Buchung (Monat)",eur.format(M[mk]?M[mk].umsatz/M[mk].anzahl:0)],
+    ["Wareneinsatz (Monat)",eur.format(M[mk]?M[mk].kosten:0)+` <span style="font-size:14px">${quotePill(M[mk]?M[mk].kosten/M[mk].umsatz:NaN)}</span>`],
+    ["Rohertrag (Monat)",eur.format(M[mk]?M[mk].umsatz-M[mk].kosten:0)],
+  ].map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join("");
+  let keys, labelKurz, labelLang, data;
+  if(uModus==="tag"){
+    keys=[]; for(let i=29;i>=0;i--){const d=new Date(heute);d.setDate(d.getDate()-i);keys.push(tagKey(d));}
+    data=T; labelKurz=k=>k.slice(8,10)+"."; labelLang=k=>WT[new Date(k+"T12:00").getDay()]+", "+tagLabel(k);
+    $("#umsatzTitel").textContent="Umsatz pro Tag (letzte 30 Tage)";
+  } else {
+    keys=[]; for(let i=11;i>=0;i--){keys.push(monatKey(new Date(heute.getFullYear(),heute.getMonth()-i,1)));}
+    data=M; labelKurz=k=>MONATE[+k.slice(5,7)-1].slice(0,3); labelLang=monatLabel;
+    $("#umsatzTitel").textContent="Umsatz pro Monat (letzte 12 Monate)";
+  }
+  const max=Math.max(1,...keys.map(k=>u(data,k)));
+  $("#umsatzChart").innerHTML=keys.map(k=>`<div class="col" title="${labelLang(k)}: ${eur.format(u(data,k))}"><div class="b" style="height:${u(data,k)/max*85}%"></div><div class="x">${labelKurz(k)}</div></div>`).join("");
+  const zeilen=keys.filter(k=>data[k]).reverse();
+  $("#umsatzTabelle").innerHTML=`<tr><th>${uModus==="tag"?"Tag":"Monat"}</th><th class="r">Umsatz</th><th class="r">Wareneinsatz</th><th class="r">Rohertrag</th><th class="r">Buchungen</th><th class="r">Artikel</th><th class="r">Ø Buchung</th></tr>`+
+    (zeilen.length?zeilen.map(k=>`<tr><td>${labelLang(k)}</td><td class="r"><b>${eur.format(data[k].umsatz)}</b></td><td class="r">${eur.format(data[k].kosten)}</td><td class="r"><b>${eur.format(data[k].umsatz-data[k].kosten)}</b></td><td class="r">${data[k].anzahl}</td><td class="r">${data[k].stueck}</td><td class="r">${eur.format(data[k].umsatz/data[k].anzahl)}</td></tr>`).join("")
+    :`<tr><td class="muted" colspan="7">Noch keine Verkäufe.</td></tr>`);
+  renderWochentag();
+}
+
+/* ---------- Wochentag & Uhrzeit ---------- */
+let wtTage=28;
+$("#wtZeitraum").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;wtTage=+b.dataset.w;
+  [...$("#wtZeitraum").children].forEach(x=>x.classList.toggle("aktiv",x===b));renderWochentag();});
+function renderWochentag(){
+  let vs=S.verkaeufe;
+  if(wtTage){const g=new Date();g.setHours(0,0,0,0);g.setDate(g.getDate()-wtTage+1);vs=vs.filter(v=>new Date(v.zeit)>=g);}
+  const W={}; const offen=new Set(); const H={};
+  vs.forEach(v=>{const d=new Date(v.zeit),wt=d.getDay(),tk=tagKey(d);offen.add(tk);
+    const w=(W[wt]=W[wt]||{tage:new Set(),umsatz:0,anzahl:0,art:{}});
+    w.tage.add(tk);w.umsatz+=v.summe;w.anzahl++;v.positionen.forEach(p=>w.art[p.name]=(w.art[p.name]||0)+p.menge);
+    H[d.getHours()]=(H[d.getHours()]||0)+v.summe;});
+  const reihe=[1,2,3,4,5,6,0], NAMEN=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+  const schnitt=wt=>W[wt]?W[wt].umsatz/W[wt].tage.size:0;
+  const max=Math.max(1,...reihe.map(schnitt)); const best=reihe.reduce((a,b)=>schnitt(b)>schnitt(a)?b:a,1);
+  $("#wtBars").innerHTML = vs.length ? reihe.map(wt=>{const w=W[wt];
+    if(!w) return `<div class="hbar"><div class="n">${NAMEN[wt]}</div><div class="t"></div><div class="z muted">Ruhetag</div></div>`;
+    const top=Object.entries(w.art).sort((a,b)=>b[1]-a[1])[0];
+    return `<div class="hbar ${wt===best?"wt-best":""}" title="Top-Artikel: ${esc(top[0])}"><div class="n">${wt===best?"🏆 ":""}${NAMEN[wt]}</div><div class="t"><div style="width:${schnitt(wt)/max*100}%"></div></div>
+      <div class="z"><b>Ø ${eur.format(schnitt(wt))}</b><br><span class="muted" style="font-size:12px">${num(w.anzahl/w.tage.size,1)} Buchungen · Top: ${esc(top[0])}</span></div></div>`;}).join("")
+    : `<p class="muted">Noch keine Verkäufe in diesem Zeitraum.</p>`;
+  const stunden=Object.keys(H).map(Number);
+  const nOffen=Math.max(offen.size,1);
+  if(!stunden.length){$("#stundenChart").innerHTML="";$("#stundenInfo").textContent="";return;}
+  const von=Math.min(...stunden), bis=Math.max(...stunden); const hs=[]; for(let h=von;h<=bis;h++) hs.push(h);
+  const hmax=Math.max(1,...hs.map(h=>H[h]||0));
+  $("#stundenChart").innerHTML=hs.map(h=>`<div class="col" title="${h}–${h+1} Uhr: Ø ${eur.format((H[h]||0)/nOffen)}"><div class="b" style="height:${(H[h]||0)/hmax*85}%"></div><div class="x">${h}h</div></div>`).join("");
+  const top=hs.reduce((a,b)=>(H[b]||0)>(H[a]||0)?b:a,hs[0]);
+  $("#stundenInfo").innerHTML=`Stärkste Stunde: <b>${top}–${top+1} Uhr</b> mit Ø ${eur.format((H[top]||0)/nOffen)} pro Tag.`;
+}
+
+/* ---------- Artikel ---------- */
+let aZeit="tag", aSort="menge";
+$("#artikelDatum").value=tagKey(new Date()); $("#artikelMonat").value=monatKey(new Date());
+$("#artikelZeitraum").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;aZeit=b.dataset.z;
+  [...$("#artikelZeitraum").children].forEach(x=>x.classList.toggle("aktiv",x===b));
+  $("#artikelDatum").hidden=aZeit!=="tag"; $("#artikelMonat").hidden=aZeit!=="monat"; renderArtikel();});
+$("#artikelSort").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;aSort=b.dataset.s;
+  [...$("#artikelSort").children].forEach(x=>x.classList.toggle("aktiv",x===b));renderArtikel();});
+$("#artikelDatum").onchange=renderArtikel; $("#artikelMonat").onchange=renderArtikel;
+function renderArtikel(){
+  const filt = aZeit==="tag" ? v=>tagKey(v.zeit)===$("#artikelDatum").value
+             : aZeit==="monat" ? v=>monatKey(v.zeit)===$("#artikelMonat").value : ()=>true;
+  const vs=S.verkaeufe.filter(filt);
+  const m={};
+  vs.forEach(v=>v.positionen.forEach(p=>{const k=p.name;(m[k]=m[k]||{name:k,menge:0,umsatz:0,kosten:0});m[k].menge+=p.menge;m[k].umsatz+=p.preis*p.menge;m[k].kosten+=posKosten(p)*p.menge;}));
+  // Artikel ohne Verkauf auch zeigen
+  S.produkte.forEach(p=>{if(!m[p.name]) m[p.name]={name:p.name,menge:0,umsatz:0,kosten:0};});
+  Object.values(m).forEach(x=>x.gewinn=x.umsatz-x.kosten);
+  const arr=Object.values(m).sort((a,b)=>b[aSort]-a[aSort]);
+  const ges=arr.reduce((a,x)=>a+x.menge,0), gesU=arr.reduce((a,x)=>a+x.umsatz,0);
+  const top=arr[0];
+  $("#artikelKpis").innerHTML=[
+    ["Verkaufte Artikel",num(ges,0)+" Stk"],["Umsatz",eur.format(gesU)],["Buchungen",vs.length],
+    ["Rohertrag",eur.format(arr.reduce((a,x)=>a+x.gewinn,0))],
+    ["Bestseller",top&&top.menge?esc(top.name):"–"],
+  ].map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v" style="${l==="Bestseller"?"font-size:18px":""}">${v}</div></div>`).join("");
+  const verk=arr.filter(x=>x.menge>0);
+  const max=Math.max(1,...verk.map(x=>x[aSort]));
+  $("#artikelBars").innerHTML = verk.length ? verk.map((x,i)=>`<div class="hbar"><div class="n">${i<3?["🥇","🥈","🥉"][i]+" ":""}${esc(x.name)}</div>
+      <div class="t"><div style="width:${x[aSort]/max*100}%"></div></div><div class="z"><b>${num(x.menge,0)}×</b> · ${eur.format(x.umsatz)}<br><span class="muted" style="font-size:12px">Rohertrag ${eur.format(x.gewinn)}</span></div></div>`).join("")
+    : `<p class="muted">In diesem Zeitraum wurde nichts verkauft.</p>`;
+  const flops=[...arr].filter(x=>S.produkte.some(p=>p.name===x.name)).sort((a,b)=>a.menge-b.menge).slice(0,3);
+  $("#artikelFlops").innerHTML = flops.length && verk.length ? flops.map(x=>`<div class="hbar"><div class="n">${esc(x.name)}</div><div class="t"><div style="width:${x.menge/Math.max(1,...arr.map(a=>a.menge))*100}%"></div></div><div class="z">${num(x.menge,0)}× · ${eur.format(x.umsatz)}</div></div>`).join("")
+    : `<p class="muted">–</p>`;
+}
+
+/* ---------- Daten ---------- */
+function download(name,inhalt,typ){
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([inhalt],{type:typ})); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+}
+$("#exportBtn").onclick=()=>{
+  S.letzteSicherung=new Date().toISOString(); speichern();
+  download("umsatzplanner-sicherung-"+tagKey(new Date())+".json",JSON.stringify(S,null,1),"application/json"); renderDaten();
+};
+$("#importFile").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=async()=>{try{const d=JSON.parse(r.result);
+      if(!Array.isArray(d.zutaten)||!Array.isArray(d.produkte)||!Array.isArray(d.verkaeufe)) throw 0;
+      e.target.value="";
+      if(!await frage("Sicherung laden?\nDie aktuellen Daten werden ersetzt.","Laden")) return;
+      const alt=S;
+      try{ S=migrieren(d); bon=[]; alles(); }catch(fehler){ S=alt; alles(); toast("⚠️ Diese Datei ist keine gültige Sicherung. Deine Daten sind unverändert."); return; }
+      speichern(); toast("Sicherung geladen");
+    }catch(x){toast("⚠️ Diese Datei ist keine gültige Sicherung.");} e.target.value="";};
+  r.readAsText(f);
+};
+$("#csvBtn").onclick=()=>{
+  const z=[["Datum","Uhrzeit","Wochentag","Artikel","Menge","Einzelpreis","Summe","Wareneinsatz","Rohertrag"]];
+  S.verkaeufe.forEach(v=>{const d=new Date(v.zeit);v.positionen.forEach(p=>{const k=posKosten(p)*p.menge;z.push([tagLabel(tagKey(d)),d.toLocaleTimeString("de-AT",{hour:"2-digit",minute:"2-digit"}),d.toLocaleDateString("de-AT",{weekday:"long"}),p.name,p.menge,inp(p.preis,2),inp(p.preis*p.menge,2),inp(k,2),inp(p.preis*p.menge-k,2)]);});});
+  download("verkaeufe-"+tagKey(new Date())+".csv","﻿"+z.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(";")).join("\r\n"),"text/csv");
+};
+$("#verkaeufeLoeschen").onclick=async()=>{if(await frage("Alle Verkäufe löschen?\nLager und Rezepte bleiben.","Löschen")){S.verkaeufe=[];speichern();alles();toast("Verkäufe gelöscht");}};
+$("#beispielLaden").onclick=async()=>{if(await frage("Beispieldaten laden?\nDeine aktuellen Daten werden ersetzt.","Laden")){S=migrieren(beispiel());speichern();bon=[];alles();toast("Beispieldaten geladen");}};
+$("#allesLoeschen").onclick=async()=>{if(await frage("Wirklich ALLES löschen und leer starten?","Alles löschen")){S=migrieren({zutaten:[],produkte:[],verkaeufe:[],letzteSicherung:null});speichern();bon=[];alles();toast("Alles gelöscht");}};
+function renderDaten(){
+  $("#letzteSicherung").textContent = S.letzteSicherung ? "Zuletzt heruntergeladen: "+new Date(S.letzteSicherung).toLocaleString("de-AT")+" (bitte im Download-Ordner prüfen, ob die Datei da ist)" : "Noch keine Sicherung heruntergeladen.";
+}
+
+/* ---------- Einstellungen ---------- */
+function einstZeigen(k){
+  [...$("#einstNav").children].forEach(x=>x.classList.toggle("aktiv",x.dataset.e===k));
+  document.querySelectorAll(".einst").forEach(x=>x.classList.toggle("aktiv",x.id==="einst-"+k));
+}
+$("#einstNav").addEventListener("click",e=>{const b=e.target.closest("button[data-e]"); if(b) einstZeigen(b.dataset.e);});
+document.addEventListener("click",e=>{const a=e.target.closest("[data-gehe]"); if(!a) return; e.preventDefault();
+  document.querySelector("nav [data-tab=daten]").click(); einstZeigen(a.dataset.gehe);});
+if(ONLINE){
+  $("#kontoName").textContent=ONLINE.kunde.name;
+  $("#kontoLokal").textContent=ONLINE.kunde.lokal?" · "+ONLINE.kunde.lokal:"";
+  $("#kontoGeraete").textContent=`Dein Zugang gilt für höchstens ${ONLINE.maxGeraete} Geräte gleichzeitig. Meldest du dich auf einem weiteren Gerät an, wird das am längsten nicht benutzte abgemeldet.`;
+  $("#abmelden").onclick=async()=>{
+    if(sync.dirty&&!await frage("Es sind noch nicht alle Änderungen gespeichert (keine Verbindung?).\nTrotzdem abmelden? Die Änderungen gehen dann verloren.","Abmelden")) return;
+    try{ await api("POST","/api/logout",{}); }catch(e){}
+    try{ localStorage.removeItem(OFFEN_KEY); }catch(e){}
+    location.href="/login";
+  };
+  $("#alleAbmelden").onclick=async()=>{
+    if(!await frage("Alle anderen Geräte abmelden?\nDort muss man sich dann neu anmelden.","Abmelden")) return;
+    try{ const r=await api("POST","/api/logout-andere",{}); toast(r.ok?"✓ Andere Geräte abgemeldet":"⚠️ Hat nicht geklappt"); }catch(e){ toast("⚠️ Keine Verbindung"); }
+  };
+  $("#pwAendern").onclick=async()=>{
+    const alt=$("#pwAlt").value, neu=$("#pwNeu").value;
+    if(neu.length<8) return toast("Das neue Passwort braucht mindestens 8 Zeichen");
+    if(neu!==$("#pwNeu2").value) return toast("Die neuen Passwörter sind nicht gleich");
+    try{
+      const r=await api("POST","/api/passwort",{alt,neu}); const j=await r.json().catch(()=>({}));
+      if(r.ok){ ["#pwAlt","#pwNeu","#pwNeu2"].forEach(s=>$(s).value=""); toast("✓ Passwort geändert. Andere Geräte wurden abgemeldet."); }
+      else if(r.status===401&&!j.fehler) abgemeldet();
+      else toast("⚠️ "+(j.fehler||"Hat nicht geklappt"));
+    }catch(e){ toast("⚠️ Keine Verbindung"); }
+  };
+}
+
+/* ---------- Alles ---------- */
+function alles(){
+  $("#speicherHinweis").hidden=speicherOk||!!ONLINE; $("#vorschauHinweis").hidden=!speicherOk||!inVorschau||!!ONLINE;
+  const d=new Date();
+  $("#kopfInfo").innerHTML=d.toLocaleDateString("de-AT",{weekday:"long",day:"numeric",month:"long"})+"<br>Heute: <b>"+eur.format(S.verkaeufe.filter(v=>tagKey(v.zeit)===tagKey(d)).reduce((a,v)=>a+v.summe,0))+"</b>";
+  renderKassa(); renderLager(); renderInventur(); renderEinkauf(); renderUmsatz(); renderArtikel(); renderDaten();
+  if(typeof renderImport==="function") renderImport();
+}
+alles();
+</script>
+<script>
+"use strict";
+/* ================= Speisekarte laden: Vorlage + KI ================= */
+const KI_KEY="umsatzplanner-apikey";
+const EINHEITEN=["kg","l","Stk","Portion"];
+// entwurf = {quelle, hinweise[], gerichte:[{an,name,kategorie,preis|null,zutaten:[{name,menge,einheit,preis|null}]}], lager:{norm:{name,einheit,preis|null,bestand?,mindest?,soll?,nurLager}}}
+let entwurf=null;
+
+const normName=s=>String(s??"").trim().toLowerCase().replace(/\s+/g," ");
+const zutatNachName=n=>S.zutaten.find(z=>normName(z.name)===normName(n));
+const produktNachName=n=>S.produkte.find(p=>normName(p.name)===normName(n));
+function einheitNorm(e){
+  const x=String(e??"").trim().toLowerCase().replace(/\.$/,"");
+  if(!x) return "";
+  if(["kg","kilo","kilogramm"].includes(x)) return "kg";
+  if(["g","gr","gramm"].includes(x)) return "g";
+  if(["l","liter","ltr","lt"].includes(x)) return "l";
+  if(["ml","milliliter"].includes(x)) return "ml";
+  if(["cl","zentiliter"].includes(x)) return "cl";
+  if(["stk","stück","stueck","st","pcs","x"].includes(x)) return "Stk";
+  if(["portion","port","portionen"].includes(x)) return "Portion";
+  return String(e).trim();
+}
+// Kleine Einheiten: Menge in g/ml/cl, Preise und Bestände aber wie im Großhandel pro kg bzw. l
+const FAKTOR={g:["kg",0.001],ml:["l",0.001],cl:["l",0.01]};
+const basis=e=>FAKTOR[e]?FAKTOR[e][0]:e;
+function umrechnen(menge,preis,von,nach){
+  if(!von||!nach) return {menge,preis,ok:true};
+  const fv=FAKTOR[von], fn=FAKTOR[nach];
+  if(basis(von)!==basis(nach)) return {menge,preis,ok:false};
+  const mb=menge*(fv?fv[1]:1);
+  return {menge:fn?mb/fn[1]:mb, preis:fn?preis*fn[1]:preis, ok:true};
+}
+const mengeIn=(m,von,nach)=>umrechnen(m,0,von,nach).menge;          // Rezeptmenge
+const preisIn=(p,von,nach)=>umrechnen(1,p,von,nach).preis;          // Preis (pro kg/l/Stk angegeben)
+const lagerIn=(b,von,nach)=>umrechnen(b,0,basis(von),nach).menge;   // Bestand (in kg/l/Stk angegeben)
+
+/* ---------- Plan: was würde übernommen ---------- */
+function plan(){
+  const an=entwurf.gerichte.filter(x=>x.an);
+  const genutzt=new Set(); an.forEach(x=>x.zutaten.forEach(z=>{ if(z.name.trim()&&z.menge>0) genutzt.add(normName(z.name)); }));
+  const lager=Object.entries(entwurf.lager).filter(([k,l])=>l.nurLager||genutzt.has(k)).map(([k,l])=>l);
+  const ziel={}; // norm -> {name,einheit,ex}
+  const konflikte=[];
+  const pruefe=(name,einheit)=>{
+    const k=normName(name); if(!k) return;
+    if(!ziel[k]){ const ex=zutatNachName(name); ziel[k]={name:name.trim(),einheit:ex?ex.einheit:basis(einheit||"Stk"),ex}; }
+    if(einheit&&basis(einheit)!==basis(ziel[k].einheit)) konflikte.push(`${name.trim()}: ${einheit} statt ${ziel[k].einheit}`);
+  };
+  an.forEach(x=>x.zutaten.forEach(z=>{ if(z.name.trim()&&z.menge>0) pruefe(z.name,z.einheit); }));
+  lager.forEach(l=>pruefe(l.name,l.einheit));
+  const namen={}, doppelt=[];
+  an.forEach(x=>{ const k=normName(x.name); if(!k) return; if(namen[k]) doppelt.push(x.name.trim()); namen[k]=1; });
+  return {an,lager,ziel,konflikte:[...new Set(konflikte)],doppelt:[...new Set(doppelt)],
+    neuZ:Object.values(ziel).filter(t=>!t.ex).length,
+    neuP:an.filter(x=>x.name.trim()&&!produktNachName(x.name)).length,
+    ohnePreis:an.filter(x=>x.preis==null&&!produktNachName(x.name)).length};
+}
+function zielEinheit(name,einheit){ const ex=zutatNachName(name); return ex?ex.einheit:basis(einheit||"Stk"); }
+function wsText(x){
+  let k=0;
+  x.zutaten.forEach(z=>{ if(!z.name.trim()||!(z.menge>0)) return;
+    const ex=zutatNachName(z.name), t=zielEinheit(z.name,z.einheit);
+    if(basis(z.einheit)!==basis(t)) return;
+    const pr=z.preis>0?preisIn(z.preis,z.einheit,t):(ex?ex.preis||0:0);
+    k+=mengeIn(z.menge,z.einheit,t)*pr; });
+  return x.zutaten.length?`Wareneinsatz ca. ${eur.format(k)}`+(x.preis>0?` · Quote ${prozent(k/x.preis)}`:""):"";
+}
+
+/* ---------- Vorlage ---------- */
+const SPALTEN=["Gericht","Kategorie","Verkaufspreis €","Zutat","Menge pro Portion","Einheit","Einkaufspreis € (pro kg, l oder Stk)","Bestand (kg, l oder Stk)","Mindestbestand","Sollbestand"];
+function csvZeile(a){ return a.map(c=>{c=String(c??"");return /[;"\n\r]/.test(c)?`"${c.replace(/"/g,'""')}"`:c;}).join(";"); }
+function vorlageLeer(){
+  const z=[SPALTEN,
+    ["Wiener Schnitzel","Speisen","14,90","Schweinefleisch","0,2","kg","9,50","","",""],
+    ["","","","Semmelbrösel","0,03","kg","2,50","","",""],
+    ["","","","Eier","1","Stk","0,30","","",""],
+    ["","","","Kartoffeln","0,25","kg","1,20","","",""],
+    ["Bier 0,5 l","Getränke","5,20","Bier (Fass)","0,5","l","3,20","","",""],
+    ["Gemischter Salat","Beilagen","5,20","Blattsalat","0,3","Stk","1,20","","",""],
+    ["","","","Tomaten","80","g","3,50","","",""]];
+  download("speisekarte-vorlage.csv","﻿"+z.map(csvZeile).join("\r\n"),"text/csv");
+  toast("Vorlage heruntergeladen");
+}
+function vorlageAktuell(){
+  const z=[SPALTEN]; const benutzt=new Set();
+  const lagerSp=x=>x.neu?["","",""]:[inp(x.bestand,3),inp(x.mindest,3),inp(x.soll,3)];
+  S.produkte.forEach(p=>{
+    const rz=p.rezept.filter(r=>zutat(r.zid));
+    if(!rz.length){ z.push([p.name,p.kategorie||"",inp(p.preis,2),"","","","","","",""]); return; }
+    rz.forEach((r,i)=>{const x=zutat(r.zid); const erste=!benutzt.has(x.id); benutzt.add(x.id);
+      z.push([i?"":p.name,i?"":(p.kategorie||""),i?"":inp(p.preis,2),x.name,inp(r.menge,4),x.einheit,inp(x.preis||0,4),...(erste?lagerSp(x):["","",""])]);});
+  });
+  S.zutaten.filter(x=>!benutzt.has(x.id)).forEach(x=>z.push(["","","",x.name,"",x.einheit,inp(x.preis||0,4),...lagerSp(x)]));
+  download("speisekarte-"+tagKey(new Date())+".csv","﻿"+z.map(csvZeile).join("\r\n"),"text/csv");
+}
+function csvParsen(text){
+  text=String(text).replace(/^﻿/,"");
+  const proben=text.split(/\r?\n/).filter(l=>l.trim()).slice(0,6);
+  const trenner=["\t",";",","].map(t=>[t,Math.max(...proben.map(l=>l.split(t).length))]).sort((a,b)=>b[1]-a[1])[0][0];
+  const zeilen=[]; let feld="",zeile=[],q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){feld+='"';i++;} else q=false; } else feld+=c; continue; }
+    if(c==='"'&&feld==="") q=true;
+    else if(c===trenner){ zeile.push(feld); feld=""; }
+    else if(c==="\n"||c==="\r"){ if(c==="\r"&&text[i+1]==="\n") i++; zeile.push(feld); zeilen.push(zeile); zeile=[]; feld=""; }
+    else feld+=c;
+  }
+  if(feld!==""||zeile.length){ zeile.push(feld); zeilen.push(zeile); }
+  return {trenner,zeilen:zeilen.filter(z=>z.some(f=>String(f).trim()!==""))};
+}
+function spaltenFinden(kopf){
+  const k=kopf.map(h=>normName(h).replace(/[€()]/g,"").trim());
+  const f=pr=>k.findIndex(pr);
+  const ix={};
+  ix.ek=f(h=>h.startsWith("ek")||h.includes("einkauf"));
+  ix.preis=f((h,i)=>i!==ix.ek&&(h.startsWith("vk")||h.includes("verkauf")||h.startsWith("preis")));
+  ix.kategorie=f(h=>h.startsWith("kategorie")||h.startsWith("warengruppe")||h.startsWith("gruppe")||h.startsWith("kat"));
+  ix.gericht=f((h,i)=>i!==ix.kategorie&&/^(gericht|artikel|speise|produkt|bezeichnung|name)/.test(h));
+  ix.zutat=f((h,i)=>i!==ix.kategorie&&(h.startsWith("zutat")||h.startsWith("rohstoff")||h==="ware"||h.startsWith("ware ")));
+  ix.menge=f(h=>h.includes("menge"));
+  ix.einheit=f(h=>h.includes("einheit"));
+  ix.mindest=f(h=>h.includes("mindest"));
+  ix.soll=f(h=>h.startsWith("soll")||h.includes("sollbestand"));
+  ix.bestand=f((h,i)=>i!==ix.mindest&&i!==ix.soll&&(h.startsWith("bestand")||h.startsWith("lagerbestand")||h==="ist"));
+  return ix;
+}
+function csvZuEntwurf(text){
+  const {trenner,zeilen}=csvParsen(text);
+  if(zeilen.length<2) throw new Error("Keine Zeilen gefunden.");
+  // Kopfzeile: die Zeile (unter den ersten 5) mit den meisten erkannten Spalten
+  let kopfNr=0,best=-1;
+  zeilen.slice(0,5).forEach((z,i)=>{ const ix=spaltenFinden(z); const n=["gericht","zutat","menge","einheit","preis","ek","kategorie"].filter(k=>ix[k]>=0).length; if(n>best){best=n;kopfNr=i;} });
+  const ix=spaltenFinden(zeilen[kopfNr]);
+  if(ix.gericht<0&&ix.zutat<0) throw new Error("Spalten „Gericht“ und „Zutat“ nicht gefunden. Bitte die Überschrift aus der Vorlage verwenden.");
+  const lies=trenner===","?(v=>{const t=String(v).replace(/[a-zA-ZäöüÄÖÜß€$\s ]/g,"");return /^-?\d*\.?\d+$/.test(t)?parseFloat(t):zahl(v);}):zahl;
+  const g=(r,k)=>ix[k]>=0?String(r[ix[k]]??"").trim():"";
+  const hinweise=[];
+  if(ix.gericht<0) hinweise.push("Keine Spalte „Gericht“ gefunden. Alle Zeilen werden nur als Lager-Zutaten gelesen.");
+  else if(ix.preis<0) hinweise.push("Keine Spalte für den Verkaufspreis gefunden. Vorhandene Preise bleiben, neue Artikel bekommen 0 €.");
+  const out=[],nachName={},lager={}; let akt=null;
+  zeilen.slice(kopfNr+1).forEach((r,n)=>{
+    const zeile=kopfNr+n+2, name=g(r,"gericht");
+    if(name){
+      const k=normName(name);
+      const pText=g(r,"preis"), p=pText?lies(pText):null;
+      if(pText&&p==null) hinweise.push(`Zeile ${zeile}: Preis „${pText}“ nicht lesbar`);
+      if(nachName[k]){ akt=nachName[k]; if(p!=null) akt.preis=Math.max(0,p); if(g(r,"kategorie")) akt.kategorie=g(r,"kategorie"); hinweise.push(`„${name}“ kommt mehrfach vor, die Zeilen wurden zusammengeführt.`); }
+      else { akt={an:true,name,kategorie:g(r,"kategorie"),preis:p==null?null:Math.max(0,p),zutaten:[]}; out.push(akt); nachName[k]=akt; }
+    }
+    const zn=g(r,"zutat");
+    if(!zn) return;
+    const ex=zutatNachName(zn);
+    const einheit=einheitNorm(g(r,"einheit"))||(ex?ex.einheit:"")||(lager[normName(zn)]||{}).einheit||"Stk";
+    const mText=g(r,"menge"), menge=mText?lies(mText):null, ekText=g(r,"ek"), ek=ekText?lies(ekText):null;
+    if(mText&&menge==null) hinweise.push(`Zeile ${zeile}: Menge „${mText}“ nicht lesbar`);
+    if(ekText&&ek==null) hinweise.push(`Zeile ${zeile}: Einkaufspreis „${ekText}“ nicht lesbar`);
+    if(akt&&ix.gericht>=0&&menge>0) akt.zutaten.push({name:zn,menge,einheit,preis:ek!=null&&ek>0?ek:null});
+    const lk=normName(zn);
+    const l=lager[lk]||(lager[lk]={name:zn,einheit,preis:null,nurLager:false});
+    if(!akt||ix.gericht<0) l.nurLager=true;
+    if(ek!=null&&ek>0) l.preis=ek;
+    [["bestand"],["mindest"],["soll"]].forEach(([k])=>{ const t=g(r,k); if(t){ const v=lies(t); if(v==null) hinweise.push(`Zeile ${zeile}: ${k} „${t}“ nicht lesbar`); else l[k]=Math.max(0,v);} });
+  });
+  return {gerichte:out,lager,hinweise};
+}
+function csvLaden(text){
+  try{
+    const {gerichte,lager,hinweise}=csvZuEntwurf(text);
+    if(!gerichte.length&&!Object.keys(lager).length) throw new Error("Keine Gerichte gefunden.");
+    entwurf={gerichte,lager,quelle:"Vorlage",hinweise};
+    renderImport(); $("#impPruefen").scrollIntoView({behavior:"smooth"});
+  }catch(e){ toast("⚠️ "+e.message); }
+}
+$("#vorlageLeer").onclick=vorlageLeer;
+$("#vorlageAktuell").onclick=vorlageAktuell;
+$("#csvDatei").onchange=e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ const t=r.result; if(t.includes("�")){ const r2=new FileReader(); r2.onload=()=>csvLaden(r2.result); r2.readAsText(f,"windows-1252"); } else csvLaden(t); e.target.value=""; };
+  r.readAsText(f,"utf-8");};
+$("#csvTextLesen").onclick=()=>{ if(!$("#csvText").value.trim()) return toast("Bitte zuerst Zeilen einfügen"); csvLaden($("#csvText").value); };
+
+/* ---------- KI ---------- */
+let kiDateien=[], kiLaeuft=false;
+function keyLaden(){ try{ const k=localStorage.getItem(KI_KEY); if(k){ $("#kiKey").value=k; $("#kiKeyMerken").checked=true; } }catch(e){} }
+keyLaden();
+function keyMerken(){ try{ if($("#kiKeyMerken").checked&&$("#kiKey").value.trim()) localStorage.setItem(KI_KEY,$("#kiKey").value.trim()); else localStorage.removeItem(KI_KEY); }catch(e){} }
+$("#kiKeyMerken").onchange=keyMerken;
+$("#kiKey").oninput=()=>{ keyMerken(); kiKnopf(); };
+let kiModus="karte";
+function kiKnopf(){
+  const hatInhalt=kiDateien.length||$("#kiText").value.trim();
+  $("#kiStart").disabled=kiLaeuft||!hatInhalt||(!ONLINE&&!$("#kiKey").value.trim());
+}
+function kiModusZeigen(){
+  [...$("#kiModus").children].forEach(x=>x.classList.toggle("aktiv",x.dataset.k===kiModus));
+  const r=kiModus==="rezepte";
+  $("#kiBeschreibung").textContent=r
+    ?"Fotos oder PDFs von Rezepten hochladen (Rezeptbuch, Kalkulationsblätter, Rezeptkarten, auch handgeschrieben) oder den Text einfügen. Die KI rechnet die Mengen auf eine Portion um und ordnet sie deinen vorhandenen Artikeln zu."
+    :"Fotos oder PDF der Speisekarte hochladen. Die KI erkennt Gerichte, Kategorien und Preise und schlägt auf Wunsch typische Rezepte mit Mengen und Einkaufspreisen vor.";
+  $("#kiRezepteText").textContent=r?"Fehlende Einkaufspreise schätzen lassen":"Rezepte und Einkaufspreise schätzen lassen";
+  $("#kiStart").textContent=r?"Rezepte auslesen":"Speisekarte auslesen";
+}
+$("#kiModus").addEventListener("click",e=>{const b=e.target.closest("button[data-k]"); if(!b) return; kiModus=b.dataset.k; kiModusZeigen();});
+$("#kiText").addEventListener("input",kiKnopf);
+kiModusZeigen();
+async function kiKontingent(){
+  if(!ONLINE) return;
+  try{ const r=await fetch("/api/ki/kontingent",{credentials:"same-origin",cache:"no-store"}); if(!r.ok) return; const j=await r.json();
+    $("#kiKontingent").textContent=`Die KI ist in deinem Zugang enthalten. Heute noch ${j.rest} von ${j.limit} Durchgängen.`; }catch(e){}
+}
+kiKontingent();
+$("#kiDateien").onchange=e=>{
+  kiDateien=[...e.target.files].filter(f=>f.type==="application/pdf"||f.type.startsWith("image/")||/\.(pdf|jpe?g|png|webp|gif|heic)$/i.test(f.name));
+  $("#kiDateiInfo").textContent=kiDateien.length?kiDateien.map(f=>f.name).join(", "):"Noch nichts gewählt";
+  e.target.value=""; kiKnopf();
+};
+const alsBase64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=()=>rej(new Error("Datei nicht lesbar: "+f.name));r.readAsDataURL(f);});
+// Fotos verkleinern (max. 1800 px), damit die Anfrage klein und schnell bleibt
+function bildBlock(f){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(f), img=new Image();
+    img.onload=()=>{ const m=1800, s=Math.min(1,m/Math.max(img.naturalWidth,img.naturalHeight));
+      const c=document.createElement("canvas"); c.width=Math.max(1,Math.round(img.naturalWidth*s)); c.height=Math.max(1,Math.round(img.naturalHeight*s));
+      const g=c.getContext("2d"); g.fillStyle="#fff"; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url);
+      res({type:"image",source:{type:"base64",media_type:"image/jpeg",data:c.toDataURL("image/jpeg",0.85).split(",")[1]}}); };
+    img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error(`Bild „${f.name}“ kann dieser Browser nicht öffnen. Bitte als JPG oder PNG speichern.`)); };
+    img.src=url;
+  });
+}
+async function dateiBlock(f){
+  if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)) return {type:"document",source:{type:"base64",media_type:"application/pdf",data:await alsBase64(f)}};
+  return bildBlock(f);
+}
+/* KI-GEMEINSAM-START (diesen Block liest auch der Server, nur reines JS ohne DOM) */
+const KI_MODELL="claude-opus-5-5";
+const KI_EINHEITEN=["kg","l","Stk","Portion"];
+const KI_SCHEMA={type:"object",additionalProperties:false,required:["gerichte","hinweis"],properties:{
+  hinweis:{type:"string"},
+  gerichte:{type:"array",items:{type:"object",additionalProperties:false,required:["name","kategorie","preis","zutaten"],properties:{
+    name:{type:"string"},kategorie:{type:"string"},preis:{type:"number"},
+    zutaten:{type:"array",items:{type:"object",additionalProperties:false,required:["name","menge","einheit","einkaufspreis"],properties:{
+      name:{type:"string"},menge:{type:"number"},einheit:{type:"string",enum:KI_EINHEITEN},einkaufspreis:{type:"number"}}}}}}}}};
+// a = {modus:"karte"|"rezepte", schaetzen:bool, zutaten:["Mehl (kg)",…], produkte:["Wiener Schnitzel",…], mitText:bool}
+function kiAuftrag(a){
+  const liste=(xs,n)=>xs.slice(0,n).join(", ");
+  const vorhZ=Array.isArray(a.zutaten)&&a.zutaten.length?` Diese Zutaten gibt es im Lager schon; nimm denselben Namen und dieselbe Einheit, wenn es dieselbe Zutat ist: ${liste(a.zutaten,400)}.`:"";
+  const quelle=a.mitText?"in den angehängten Dateien und im Text unten":"in den angehängten Dateien";
+  const einheiten=`Verwende nur die Einheiten kg, l, Stk und Portion, also Gramm als Bruchteil von kg (200 g = 0.2) und Milliliter als Bruchteil von l (40 ml = 0.04). Eine Zutat hat in allen Gerichten denselben Namen und dieselbe Einheit.`;
+  if(a.modus==="rezepte"){
+    const vorhP=Array.isArray(a.produkte)&&a.produkte.length?` Diese Artikel gibt es auf der Speisekarte schon. Wenn ein Rezept zu einem davon gehört, verwende genau diesen Namen: ${liste(a.produkte,400)}.`:"";
+    return `Lies die Rezepte ${quelle} aus (z. B. Rezeptbuch, Kalkulationsblätter, Rezeptkarten oder Notizen). Sie gehören zu einem Lokal in Österreich und werden in eine einfache Umsatz- und Lagerplanung übernommen.
+
+Leg pro Gericht oder Getränk einen Eintrag an. „name“ ist der Name des Gerichts.${vorhP} „kategorie“ nur, wenn sie erkennbar ist (z. B. Hauptspeisen, Desserts), sonst leer. „preis“ ist der Verkaufspreis in Euro, wenn er dabeisteht, sonst 0.
+
+„zutaten“ sind die Zutaten für genau EINE Portion. Wenn ein Rezept für mehrere Portionen, ein Blech oder einen Topf angegeben ist, teil alle Mengen durch die Zahl der Portionen; steht keine Portionszahl dabei, schätz sie und schreib das in „hinweis“. Grundrezepte (z. B. Teig, Fond, Sauce), die in einem Gericht verwendet werden, löst du anteilig in ihre Zutaten auf. Lass Zutaten weg, die kaum Kosten verursachen und nicht gelagert werden (eine Prise Salz, etwas Pfeffer). ${einheiten}${vorhZ}
+
+„einkaufspreis“ ist der Einkaufspreis in Euro pro Einheit (pro kg, l oder Stk), wenn er im Rezept steht. ${a.schaetzen?"Wenn nicht, schätz den üblichen Großhandelspreis in Österreich (netto).":"Wenn nicht, setz 0."} Erfinde keine Rezepte, die nicht in den Unterlagen stehen.
+
+Schreib in „hinweis“ kurz auf Deutsch, was unleserlich oder unsicher war oder welche Portionszahl du angenommen hast, sonst einen leeren Text.`;
+  }
+  return `Lies die Speisekarte ${quelle} aus. Sie gehört zu einem Lokal in Österreich und wird in eine einfache Umsatz- und Lagerplanung übernommen.
+
+Übernimm jedes Gericht und jedes Getränk genau einmal, mit dem Namen wie auf der Karte, der Kategorie wie auf der Karte (z. B. Vorspeisen, Hauptspeisen, Getränke) und dem Verkaufspreis in Euro als Zahl. Wenn ein Artikel mehrere Größen hat (z. B. 0,3 l und 0,5 l), leg pro Größe einen eigenen Eintrag mit der Größe im Namen an, damit jeder Name nur einmal vorkommt. Fehlt ein Preis, setz 0. Erfinde keine Gerichte, die nicht auf der Karte stehen.
+
+${a.schaetzen?`Schätz für jeden Eintrag ein typisches Rezept für eine Portion, wie es eine österreichische Gastroküche kalkulieren würde: die wichtigsten Zutaten (die, die Kosten verursachen oder gelagert werden, keine Prise Salz), die Menge pro Portion und den üblichen Großhandels-Einkaufspreis in Euro pro Einheit (netto, Österreich). ${einheiten} Ein Getränk vom Fass oder aus der Flasche hat normalerweise genau eine Zutat (z. B. „Bier (Fass)“ 0.5 l oder „Cola 0,33 Flasche“ 1 Stk).${vorhZ}`:`Lass die Liste der Zutaten bei jedem Eintrag leer.`}
+
+Schreib in „hinweis“ einen kurzen Satz auf Deutsch, falls etwas unleserlich oder unsicher war, sonst einen leeren Text.`;
+}
+/* KI-GEMEINSAM-ENDE */
+async function kiStarten(){
+  if(kiLaeuft) return;
+  const key=ONLINE?"":$("#kiKey").value.trim();
+  const kiText=$("#kiText").value.trim();
+  if(!ONLINE&&!key) return toast("Bitte API-Schlüssel eingeben");
+  if(!kiDateien.length&&!kiText) return toast("Bitte Foto oder PDF wählen oder Text einfügen");
+  if(kiDateien.reduce((a,f)=>a+f.size,0)>24e6&&kiDateien.some(f=>/pdf/i.test(f.type||f.name))) return toast("⚠️ Die Dateien sind zu groß (max. ca. 24 MB).");
+  kiLaeuft=true; kiKnopf();
+  const modus=kiModus, schaetzen=$("#kiRezepte").checked;
+  const status=t=>$("#kiStatus").innerHTML=t;
+  try{
+    status('<span class="spinner"></span>Dateien werden vorbereitet …');
+    const bloecke=[]; for(const f of kiDateien) bloecke.push(await dateiBlock(f));
+    status(`<span class="spinner"></span>Die KI liest ${modus==="rezepte"?"die Rezepte":"die Speisekarte"}. Das dauert meist 20 Sekunden bis 2 Minuten …`);
+    let antwort;
+    try{
+      if(ONLINE){
+        antwort=await api("POST","/api/ki",{modus,schaetzen,text:kiText,bloecke});
+      } else {
+        const auftrag=kiAuftrag({modus,schaetzen,mitText:!!kiText,zutaten:S.zutaten.map(z=>`${z.name} (${z.einheit})`),produkte:S.produkte.map(p=>p.name)});
+        const inhalt=[...bloecke]; if(kiText) inhalt.push({type:"text",text:"Text:\n"+kiText});
+        inhalt.push({type:"text",text:auftrag});
+        antwort=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{
+            "content-type":"application/json","x-api-key":key,"anthropic-version":"2026-10-21",
+            "anthropic-beta":"server-side-fallback-2026-07-01","anthropic-dangerous-direct-browser-access":"true"},
+          body:JSON.stringify({model:KI_MODELL,max_tokens:16000,fallbacks:"default",
+            output_config:{effort:"medium",format:{type:"json_schema",schema:KI_SCHEMA}},
+            messages:[{role:"user",content:inhalt}]})});
+      }
+    }catch(e){ console.error(e); throw new Error(ONLINE?"Keine Verbindung zum Server. Bitte Internet prüfen.":"Keine Verbindung zur KI. Bitte Internet prüfen. In der Vorschau-Ansicht kann die Verbindung blockiert sein, dann die Datei direkt im Browser öffnen."); }
+    let daten=null; try{ daten=await antwort.json(); }catch(e){}
+    if(ONLINE&&!antwort.ok){
+      if(antwort.status===401&&!(daten&&daten.fehler)){ abgemeldet(); throw new Error("Bitte neu anmelden."); }
+      throw new Error((daten&&daten.fehler)||`Fehler ${antwort.status}. Bitte später nochmal versuchen.`);
+    }
+    if(!antwort.ok){
+      const msg=(daten&&daten.error&&daten.error.message)||"";
+      if(antwort.status===401) throw new Error("Der API-Schlüssel stimmt nicht. Bitte prüfen.");
+      if(antwort.status===403) throw new Error("Der API-Schlüssel hat keine Berechtigung. "+msg);
+      if(antwort.status===429) throw new Error("Zu viele Anfragen oder kein Guthaben mehr. Bitte kurz warten bzw. in der Anthropic Console Guthaben prüfen.");
+      if(antwort.status===413) throw new Error("Die Dateien sind zu groß. Bitte weniger oder kleinere Seiten hochladen.");
+      if(antwort.status===400&&/credit|balance/i.test(msg)) throw new Error("Kein Guthaben auf dem Anthropic-Konto. Bitte in der Console aufladen.");
+      if(antwort.status>=500) throw new Error("Die KI ist gerade überlastet oder nicht erreichbar. Bitte in ein paar Minuten nochmal versuchen.");
+      throw new Error(`Fehler ${antwort.status}: ${msg||"unbekannt"}`);
+    }
+    if(!daten) throw new Error("Die Antwort der KI war leer. Bitte nochmal versuchen.");
+    if(daten.stop_reason==="refusal") throw new Error("Die KI hat die Anfrage abgelehnt. Bitte mit einem anderen Foto versuchen oder die Vorlage verwenden.");
+    kiKontingent();
+    const text=(daten.content||[]).filter(b=>b&&b.type==="text").map(b=>b.text).join("");
+    let erg=null; try{ erg=JSON.parse(text); }catch(e){}
+    if(!erg||typeof erg!=="object") throw new Error(daten.stop_reason==="max_tokens"?"Das ist sehr viel auf einmal. Bitte in mehreren Teilen hochladen (z. B. eine Seite pro Durchgang).":"Die Antwort der KI war nicht lesbar. Bitte nochmal versuchen.");
+    const zahlOk=v=>{const n=Number(v);return isFinite(n)?n:0;};
+    const gerichte=(Array.isArray(erg.gerichte)?erg.gerichte:[]).filter(g=>g&&String(g.name||"").trim()).map(g=>({an:true,name:String(g.name).trim(),kategorie:String(g.kategorie||"").trim(),
+      preis:modus==="rezepte"&&!(zahlOk(g.preis)>0)?null:Math.max(0,zahlOk(g.preis)),zutaten:(Array.isArray(g.zutaten)?g.zutaten:[]).filter(x=>x&&String(x.name||"").trim()&&zahlOk(x.menge)>=0.0001)
+        .map(x=>({name:String(x.name).trim(),menge:Math.round(zahlOk(x.menge)*10000)/10000,einheit:einheitNorm(x.einheit)||"Stk",preis:zahlOk(x.einkaufspreis)>0?zahlOk(x.einkaufspreis):null}))}));
+    if(!gerichte.length) throw new Error((modus==="rezepte"?"Es wurden keine Rezepte erkannt.":"Auf den Dateien wurden keine Gerichte erkannt.")+(erg.hinweis?" Hinweis der KI: "+erg.hinweis:""));
+    entwurf={gerichte,lager:{},quelle:"KI",modus,hinweise:erg.hinweis?[String(erg.hinweis)]:[]};
+    if(daten.stop_reason==="max_tokens") entwurf.hinweise.push("Das war sehr viel auf einmal, eventuell fehlen am Ende Einträge.");
+    status(`✓ ${gerichte.length} Einträge erkannt. Bitte unten prüfen.`);
+    renderImport(); $("#impPruefen").scrollIntoView({behavior:"smooth"});
+  }catch(e){
+    status("⚠️ "+esc(e.message||String(e)));
+  }finally{ kiLaeuft=false; kiKnopf(); }
+}
+$("#kiStart").onclick=kiStarten;
+
+/* ---------- Prüfen & Übernehmen ---------- */
+function zutatTag(z,pl){
+  const t=pl.ziel[normName(z.name)];
+  if(!z.name.trim()) return `<span class="pill tag">–</span>`;
+  if(t&&basis(z.einheit)!==basis(t.einheit)) return `<span class="pill bad tag">Einheit: ${esc(t.einheit)}?</span>`;
+  return t&&t.ex?`<span class="pill tag">vorhanden</span>`:`<span class="pill ok tag">neu</span>`;
+}
+function renderImport(){
+  const box=$("#impPruefen"); if(!box) return;
+  if(!entwurf){ box.hidden=true; return; }
+  box.hidden=false;
+  const pl=plan(), g=entwurf.gerichte;
+  const nurLager=pl.lager.filter(l=>l.nurLager).length;
+  $("#impInfo").innerHTML=`Aus ${entwurf.quelle==="KI"?"der KI":"der Vorlage"}: <b>${pl.an.length}</b> von ${g.length} Artikeln ausgewählt · ${pl.neuP} neu, ${pl.an.length-pl.neuP} werden aktualisiert · ${pl.neuZ} neue Zutaten`+(nurLager?` · ${nurLager} Lager-Zeilen`:"")+"."+
+    (entwurf.quelle==="KI"?` Mengen und Einkaufspreise sind Schätzungen der KI, bitte kontrollieren.`:"")+
+    [...pl.konflikte.map(k=>"Einheit passt nicht zum Lager: "+k),...pl.doppelt.map(d=>`„${d}“ ist doppelt ausgewählt, bitte umbenennen oder abwählen`),...(pl.ohnePreis?[`${pl.ohnePreis} neue Artikel ohne Preis`]:[]),...entwurf.hinweise].slice(0,10).map(t=>`<br>⚠️ ${esc(t)}`).join("");
+  $("#impUebernehmen").disabled=!pl.an.length&&!pl.lager.length;
+  $("#impListe").innerHTML=g.map((x,i)=>`<div class="imp-gericht ${x.an?"":"aus"}" data-g="${i}">
+    <div class="imp-kopf"><input type="checkbox" data-f="an" ${x.an?"checked":""} title="Übernehmen">
+      <input data-f="name" value="${esc(x.name)}" placeholder="Name"><input data-f="kategorie" value="${esc(x.kategorie)}" placeholder="${produktNachName(x.name)?esc(produktNachName(x.name).kategorie||"Kategorie"):"Kategorie"}">
+      <input data-f="preis" inputmode="decimal" value="${x.preis==null?"":inp(x.preis,2)}" placeholder="${produktNachName(x.name)?inp(produktNachName(x.name).preis,2):"Preis"}"> €
+      <span class="pill ${produktNachName(x.name)?"":"ok"}">${produktNachName(x.name)?"wird aktualisiert":"neu"}</span></div>
+    ${x.zutaten.map((z,j)=>`<div class="imp-z" data-z="${j}"><input data-zf="name" value="${esc(z.name)}" placeholder="Zutat"><input data-zf="menge" inputmode="decimal" value="${z.menge?inp(z.menge,4):""}" placeholder="Menge">
+      <select data-zf="einheit">${[...new Set([...EINHEITEN,"g","ml","cl",z.einheit])].map(e=>`<option ${e===z.einheit?"selected":""}>${esc(e)}</option>`).join("")}</select>
+      <input class="ek" data-zf="preis" inputmode="decimal" value="${z.preis==null?"":inp(z.preis,4)}" placeholder="EK €" title="Einkaufspreis € pro kg, l oder Stk">
+      ${zutatTag(z,pl)}<button type="button" class="btn klein" data-zweg title="Zutat entfernen">✕</button></div>`).join("")}
+    <button type="button" class="btn klein" data-zplus style="margin-top:6px">+ Zutat</button>
+    <span class="muted" data-ws style="font-size:13px;margin-left:8px">${wsText(x)}</span>
+  </div>`).join("")||`<p class="muted">Keine Gerichte, nur Zutaten für das Lager.</p>`;
+}
+// neu zeichnen, ohne dass der Cursor verloren geht
+function renderImportBehalten(){
+  setTimeout(()=>{
+    const a=document.activeElement, liste=$("#impListe");
+    let sel=null;
+    if(a&&liste.contains(a)){ const gEl=a.closest("[data-g]"), zEl=a.closest("[data-z]");
+      sel=`[data-g="${gEl.dataset.g}"] `+(zEl?`[data-z="${zEl.dataset.z}"] [data-zf="${a.dataset.zf}"]`:(a.dataset.f?`[data-f="${a.dataset.f}"]`:(a.dataset.zplus!==undefined?"[data-zplus]":""))); }
+    renderImport();
+    if(sel){ const n=liste.querySelector(sel); if(n) n.focus(); }
+  },0);
+}
+$("#impListe").addEventListener("input",e=>{
+  const gEl=e.target.closest("[data-g]"); if(!gEl||!entwurf) return; const x=entwurf.gerichte[+gEl.dataset.g];
+  const f=e.target.dataset.f, zf=e.target.dataset.zf;
+  if(f==="an"){ x.an=e.target.checked; gEl.classList.toggle("aus",!x.an); }
+  else if(f==="preis"){ const v=zahl(e.target.value); x.preis=e.target.value.trim()===""?null:(v==null?x.preis:Math.max(0,v)); }
+  else if(f) x[f]=e.target.value;
+  else if(zf){ const z=x.zutaten[+e.target.closest("[data-z]").dataset.z];
+    if(zf==="menge") z.menge=Math.max(0,zahl(e.target.value)??0);
+    else if(zf==="preis"){ const v=zahl(e.target.value); z.preis=v>0?v:null; }
+    else z[zf]=e.target.value; }
+  const ws=gEl.querySelector("[data-ws]"); if(ws) ws.textContent=wsText(x);
+});
+$("#impListe").addEventListener("change",e=>{ const d=e.target.dataset; if(d.f==="an"||d.f==="name"||d.zf==="einheit"||d.zf==="name") renderImportBehalten(); });
+$("#impListe").addEventListener("click",e=>{
+  const gEl=e.target.closest("[data-g]"); if(!gEl||!entwurf) return; const i=gEl.dataset.g, x=entwurf.gerichte[+i];
+  if(e.target.dataset.zweg!==undefined){ x.zutaten.splice(+e.target.closest("[data-z]").dataset.z,1); renderImport(); }
+  if(e.target.dataset.zplus!==undefined){ x.zutaten.push({name:"",menge:0,einheit:"kg",preis:null}); renderImport();
+    const l=[...$("#impListe").querySelectorAll(`[data-g="${i}"] [data-zf=name]`)].pop(); if(l) l.focus(); }
+});
+$("#impVerwerfen").onclick=async()=>{ if(await frage("Diesen Import verwerfen?","Verwerfen")){ entwurf=null; $("#kiStatus").textContent=""; renderImport(); } };
+$("#impUebernehmen").onclick=async()=>{
+  if(!entwurf) return;
+  const pl=plan();
+  if(pl.an.some(x=>!x.name.trim())) return toast("Ein ausgewählter Artikel hat keinen Namen");
+  if(pl.doppelt.length) return frage("Diese Namen sind doppelt ausgewählt. Bitte umbenennen oder einen abwählen:\n"+pl.doppelt.join("\n"),"OK");
+  if(pl.konflikte.length) return frage("Bei diesen Zutaten passt die Einheit nicht. Bitte anpassen:\n"+pl.konflikte.join("\n"),"OK");
+  const teile=[]; if(pl.an.length) teile.push(`${pl.an.length} Artikel übernehmen?\nGleichnamige Artikel bekommen Preis, Kategorie und Rezept aus dem Import (leere Felder bleiben wie sie sind).`);
+  const nurLager=pl.lager.filter(l=>l.nurLager).length; if(nurLager) teile.push(`${nurLager} Lager-Zeilen übernehmen (Preise und Bestände).`);
+  if(!await frage(teile.join("\n\n"),"Übernehmen")) return;
+  let neuZ=0, neuP=0, updP=0;
+  const hole=name=>{ const t=pl.ziel[normName(name)]; let z=zutatNachName(name);
+    if(!z){ z={id:uid(),name:t.name,einheit:t.einheit,bestand:0,mindest:0,soll:0,preis:0,neu:true}; S.zutaten.push(z); neuZ++; }
+    return z; };
+  // 1) Rezepte
+  pl.an.forEach(x=>{
+    const rezept=[];
+    x.zutaten.filter(r=>r.name.trim()&&r.menge>0).forEach(r=>{
+      const z=hole(r.name);
+      if(r.preis>0) z.preis=Math.round(preisIn(r.preis,r.einheit,z.einheit)*10000)/10000;
+      const m=Math.round(mengeIn(r.menge,r.einheit,z.einheit)*10000)/10000;
+      const da=rezept.find(y=>y.zid===z.id); if(da) da.menge=Math.round((da.menge+m)*10000)/10000; else rezept.push({zid:z.id,menge:m});
+    });
+    const p=produktNachName(x.name);
+    if(p){ if(x.preis!=null) p.preis=runden(x.preis); if(x.kategorie.trim()) p.kategorie=x.kategorie.trim(); if(rezept.length) p.rezept=rezept; updP++; }
+    else { S.produkte.push({id:uid(),name:x.name.trim(),kategorie:x.kategorie.trim()||"Sonstiges",preis:runden(x.preis||0),rezept}); neuP++; }
+  });
+  // 2) Lager-Angaben (nur für übernommene Zutaten bzw. reine Lager-Zeilen)
+  pl.lager.forEach(l=>{
+    const z=hole(l.name);
+    if(l.nurLager&&l.preis>0) z.preis=Math.round(preisIn(l.preis,l.einheit,z.einheit)*10000)/10000;
+    ["bestand","mindest","soll"].forEach(k=>{ if(l[k]!=null){ z[k]=Math.round(lagerIn(l[k],l.einheit,z.einheit)*1000)/1000; if(k==="bestand") delete z.neu; } });
+    if(z.soll<z.mindest) z.soll=z.mindest;
+  });
+  entwurf=null; $("#kiStatus").textContent=""; speichern(); alles();
+  toast(`✓ ${neuP} neue, ${updP} aktualisierte Artikel, ${neuZ} neue Zutaten`);
+  const ungezaehlt=S.zutaten.filter(z=>z.neu).length;
+  if(ungezaehlt&&await frage(`Fertig! ${ungezaehlt} Zutaten sind noch nicht gezählt.\nTrag in der Inventur ein, wie viel davon im Lager ist. Bis dahin stehen sie nicht auf der Einkaufsliste.`,"Zur Inventur"))
+    document.querySelector('nav [data-tab=inventur]').click();
+};
+renderImport();
+</script>
+
+</body>
+</html>
