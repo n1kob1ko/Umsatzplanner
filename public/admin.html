@@ -6,35 +6,45 @@
 <meta name="robots" content="noindex">
 <title>Umsatzplanner · Verwaltung</title>
 <style>
-:root{--bg:#f4f1ec;--card:#fff;--ink:#1f1d1a;--muted:#6f6a62;--line:#e3ddd3;--accent:#b4532a;--accent-ink:#fff;--ok:#2f7d4f;--warn:#c08a1e;--bad:#b83232;--soft:#f8f5f0}
-@media (prefers-color-scheme: dark){:root{--bg:#1a1816;--card:#24211e;--ink:#f1ece4;--muted:#a59e93;--line:#3a352f;--accent:#e0794a;--accent-ink:#1a1816;--soft:#2c2824}}
+@font-face{font-family:"Figtree";font-style:normal;font-weight:300 900;font-display:swap;src:url(/figtree.woff2) format("woff2")}
+:root{--bg:#F7F5F0;--card:#FFFFFF;--ink:#1E1C18;--muted:#6A655C;--line:rgba(30,28,24,.09);--accent:#FFC94D;--accent-ink:#1E1C18;--accent-text:#7A5200;--ok:#1A6B3B;--bad:#B02B21;--soft:#F2EFE8;
+  --schatten:0 1px 2px rgba(30,28,24,.04),0 10px 28px rgba(30,28,24,.07);--ein:cubic-bezier(.2,.8,.2,1)}
+@media (prefers-color-scheme: dark){:root{--bg:#151412;--card:#211F1C;--ink:#F4F0E8;--muted:#ADA69A;--line:rgba(255,255,255,.09);--accent-text:#FFC94D;--ok:#5FCB8D;--bad:#FF8073;--soft:#2C2A26;--schatten:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.25)}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:1100px;margin:0 auto;padding:16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
-h1{font-size:22px;margin:4px 0 16px}h2{font-size:17px;margin:0 0 12px}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:17px;line-height:1.45}
+:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 80%,var(--ink));outline-offset:2px}
+@keyframes rein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes blende{from{opacity:0}to{opacity:1}}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+.card{background:var(--card);border-radius:28px;padding:22px;margin-bottom:16px;box-shadow:var(--schatten)}
+h1{font-size:22px;margin:4px 4px 18px;display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.01em}
+h1 span{color:var(--muted);font-weight:600}
+h2{font-size:19px;margin:0 0 12px;font-weight:800}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.grow{flex:1}
-input,textarea{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--soft);color:var(--ink);min-width:0}
-.btn{font:inherit;font-weight:600;padding:8px 13px;border:1px solid var(--line);border-radius:9px;background:var(--soft);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-block}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.danger{color:var(--bad)}.btn.klein{padding:5px 9px;font-size:13px}
+input,textarea{font:inherit;padding:10px 16px;min-height:48px;border:0;border-radius:20px;background:var(--soft);color:var(--ink);min-width:0}
+.btn{font:inherit;font-weight:700;padding:0 18px;min-height:48px;border:0;border-radius:999px;background:var(--soft);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;transition:transform .12s var(--ein)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--soft))}.btn.klein{padding:0 14px;min-height:40px;font-size:14px}
 .muted{color:var(--muted)}
-.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:700;background:var(--soft);border:1px solid var(--line)}
-.pill.ok{color:var(--ok)}.pill.bad{color:var(--bad)}.pill.warn{color:var(--warn)}
-.kunde{border-top:1px solid var(--line);padding:12px 0}
+a{color:var(--accent-text);font-weight:600}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--soft);vertical-align:middle}
+.pill.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}.pill.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 13%,transparent)}
+.kunde{border-top:1px solid var(--line);padding:14px 0}
 .kunde:first-child{border-top:0}
-.kunde h3{margin:0;font-size:16px}
-.neu{background:var(--soft);border:2px dashed var(--accent);border-radius:12px;padding:14px;margin-top:12px}
-.neu code{font-size:18px;font-weight:700;user-select:all}
-details summary{cursor:pointer;color:var(--muted);font-size:13px}
-table{border-collapse:collapse;font-size:13px}td{padding:2px 10px 2px 0}
+.kunde h3{margin:0;font-size:17px}
+.neu{background:color-mix(in srgb,var(--accent) 22%,var(--card));border-radius:20px;padding:16px 18px;margin-top:14px}
+.neu code{font-size:19px;font-weight:700;user-select:all;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+details summary{cursor:pointer;color:var(--muted);font-size:14px;font-weight:600;min-height:36px;display:flex;align-items:center}
+table{border-collapse:collapse;font-size:14px}td{padding:3px 12px 3px 0}
 #fehler{color:var(--bad);font-weight:600}
+@media (prefers-reduced-motion: reduce){.btn:active{transform:none}}
 </style>
 </head>
 <body>
 <main>
-  <h1>🍽️ Umsatzplanner · Verwaltung</h1>
+  <h1><svg width="32" height="32" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="15" fill="#FFC94D"/><rect x="8" y="15" width="3.6" height="7" rx="1.8" fill="#1E1C18"/><rect x="13.2" y="11" width="3.6" height="11" rx="1.8" fill="#1E1C18"/><rect x="18.4" y="7.5" width="3.6" height="14.5" rx="1.8" fill="#1E1C18"/></svg>Umsatzplanner <span>Verwaltung</span></h1>
 
   <div class="card" id="loginBox" hidden>
     <h2>Anmelden</h2>

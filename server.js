@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import vm from "node:vm";
+import zlib from "node:zlib";
 import { promisify } from "node:util";
 import { DatabaseSync } from "node:sqlite";
 import Anthropic from "@anthropic-ai/sdk";
@@ -90,9 +91,15 @@ const SICHERHEIT = {
   "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'",
 };
 function senden(res, status, body, typ = "application/json; charset=utf-8", extra = {}) {
-  const daten = typeof body === "string" || Buffer.isBuffer(body) ? body : JSON.stringify(body);
-  res.writeHead(status, { ...SICHERHEIT, "Content-Type": typ, "Cache-Control": "no-store", ...extra });
-  res.end(daten);
+  const daten = Buffer.isBuffer(body) ? body : Buffer.from(typeof body === "string" ? body : JSON.stringify(body));
+  const kopf = { ...SICHERHEIT, "Content-Type": typ, "Cache-Control": "no-store", ...extra };
+  if (res.gzip && daten.length > 1024 && /^(text\/|application\/json)/.test(typ)) {
+    return zlib.gzip(daten, { level: 5 }, (e, klein) => {
+      if (e) { res.writeHead(status, kopf); return res.end(daten); }
+      res.writeHead(status, { ...kopf, "Content-Encoding": "gzip", Vary: "Accept-Encoding" }); res.end(klein);
+    });
+  }
+  res.writeHead(status, kopf); res.end(daten);
 }
 const json = (res, status, obj) => senden(res, status, obj);
 const umleiten = (res, ort) => { res.writeHead(302, { ...SICHERHEIT, Location: ort, "Cache-Control": "no-store" }); res.end(); };
@@ -186,9 +193,18 @@ function csrfOk(req) {
 /* ---------- Seiten ---------- */
 const PUBLIC = path.join(HIER, "public");
 const lies = f => fs.readFileSync(path.join(PUBLIC, f), "utf8");
-let APP = lies("index.html"), LOGIN = lies("login.html"), ADMIN = lies("admin.html");
+// Die App trägt die Schrift eingebettet (damit die Datei auch offline funktioniert). Online wird sie einmal als Datei ausgeliefert.
+let SCHRIFT = null;
+function appLesen() {
+  const roh = lies("index.html");
+  const m = roh.match(/url\(data:font\/woff2;base64,([A-Za-z0-9+/=]+)\)/);
+  if (!m) return roh;
+  SCHRIFT = Buffer.from(m[1], "base64");
+  return roh.replace(m[0], "url(/figtree.woff2)");
+}
+let APP = appLesen(), LOGIN = lies("login.html"), ADMIN = lies("admin.html");
 if (process.env.NODE_ENV === "development") { // beim Entwickeln immer frisch lesen
-  setInterval(() => { APP = lies("index.html"); LOGIN = lies("login.html"); ADMIN = lies("admin.html"); KI = kiLaden(); }, 1000).unref();
+  setInterval(() => { APP = appLesen(); LOGIN = lies("login.html"); ADMIN = lies("admin.html"); KI = kiLaden(); }, 1000).unref();
 }
 // gemeinsamer KI-Block aus der App (Schema + Auftrag), damit Browser und Server dasselbe verwenden
 function kiLaden() {
@@ -358,6 +374,7 @@ async function verarbeiten(req, res) {
   if (p === "/health") return senden(res, 200, "ok", "text/plain");
   if (p === "/admin" || p.startsWith("/api/admin/")) return admin(req, res, url);
   if (p === "/favicon.ico") { res.writeHead(204); return res.end(); }
+  if (p === "/figtree.woff2" && SCHRIFT) return senden(res, 200, SCHRIFT, "font/woff2", { "Cache-Control": "public, max-age=31536000, immutable" });
 
   if (p === "/" && req.method === "GET") {
     const k = angemeldet(req); if (!k) return umleiten(res, "/login");
@@ -436,6 +453,7 @@ async function verarbeiten(req, res) {
 }
 
 const server = http.createServer((req, res) => {
+  res.gzip = /\bgzip\b/.test(String(req.headers["accept-encoding"] || ""));
   verarbeiten(req, res).catch(e => {
     if (!(e instanceof Fehler)) console.error(e);
     if (res.headersSent) return res.end();
