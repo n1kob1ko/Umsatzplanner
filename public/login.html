@@ -6,31 +6,41 @@
 <title>Umsatzplanner · Anmelden</title>
 <style>
 @font-face{font-family:"Figtree";font-style:normal;font-weight:300 900;font-display:swap;src:url(/figtree.woff2) format("woff2")}
-:root{--bg:#F7F5F0;--card:#FFFFFF;--ink:#1E1C18;--muted:#6A655C;--line:rgba(30,28,24,.09);--accent:#FFC94D;--accent-ink:#1E1C18;--accent-text:#7A5200;--ok:#1A6B3B;--bad:#B02B21;--soft:#F2EFE8;
-  --schatten:0 1px 2px rgba(30,28,24,.04),0 10px 28px rgba(30,28,24,.07);--ein:cubic-bezier(.2,.8,.2,1)}
-@media (prefers-color-scheme: dark){:root{--bg:#151412;--card:#211F1C;--ink:#F4F0E8;--muted:#ADA69A;--line:rgba(255,255,255,.09);--accent-text:#FFC94D;--ok:#5FCB8D;--bad:#FF8073;--soft:#2C2A26;--schatten:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.25)}}
+:root{--bg:#F5F5F3;--card:#FFFFFF;--ink:#1D1E20;--muted:#63666B;--line:rgba(29,30,32,.09);--accent:#2F62E0;--accent-ink:#FFFFFF;--accent-text:#2553C7;--ok:#1A6B3B;--bad:#B02B21;--soft:#EFEFEC;
+  --schatten:0 1px 2px rgba(29,30,32,.05),0 6px 18px rgba(29,30,32,.06);--ein:cubic-bezier(.2,.8,.2,1)}
+html[data-farbe=gruen]{--accent:#0E7566;--accent-text:#0B6557}
+html[data-farbe=orange]{--accent:#BF5327;--accent-text:#A8451D}
+html[data-farbe=gelb]{--accent:#FFC94D;--accent-ink:#1D1E20;--accent-text:#7A5200}
+html[data-farbe=dunkel]{--accent:#2A2B2E;--accent-text:#1D1E20}
+@media (prefers-color-scheme: dark){:root{--bg:#141415;--card:#1F2022;--ink:#F1F1EE;--muted:#A6A8AC;--line:rgba(255,255,255,.09);--accent:#86A7FF;--accent-ink:#10131A;--accent-text:#9DB8FF;--ok:#5FCB8D;--bad:#FF8073;--soft:#2A2B2E;--schatten:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25)}
+  html[data-farbe=gruen]{--accent:#5CCDB9;--accent-ink:#0C1614;--accent-text:#7ADACA}
+  html[data-farbe=orange]{--accent:#F0895B;--accent-ink:#1A100B;--accent-text:#F5A27D}
+  html[data-farbe=gelb]{--accent:#FFC94D;--accent-ink:#1D1E20;--accent-text:#FFC94D}
+  html[data-farbe=dunkel]{--accent:#EDEDEA;--accent-ink:#141415;--accent-text:#F1F1EE}}
+.logo-k{fill:var(--accent)}.logo-b{fill:var(--accent-ink)}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:17px;line-height:1.45}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.4}
 :focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 80%,var(--ink));outline-offset:2px}
 @keyframes rein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes blende{from{opacity:0}to{opacity:1}}
 main{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
-.card{width:100%;max-width:400px;background:var(--card);border-radius:28px;padding:28px;box-shadow:var(--schatten);animation:rein .22s var(--ein) both}
-h1{font-size:23px;margin:0 0 22px;display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.01em}
-label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0 6px;padding-left:6px}
-input{width:100%;font:inherit;padding:12px 16px;min-height:52px;border:0;border-radius:20px;background:var(--soft);color:var(--ink);margin-bottom:14px}
-button{width:100%;font:inherit;font-weight:700;min-height:52px;border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);cursor:pointer;margin-top:6px;transition:transform .12s var(--ein)}
+.card{width:100%;max-width:340px;background:var(--card);border-radius:20px;padding:22px;box-shadow:var(--schatten);animation:rein .22s var(--ein) both}
+h1{font-size:19px;margin:0 0 18px;display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:-.01em}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:0 0 4px;padding-left:4px}
+input{width:100%;font:inherit;padding:8px 14px;min-height:42px;border:0;border-radius:14px;background:var(--soft);color:var(--ink);margin-bottom:10px}
+button{width:100%;font:inherit;font-weight:700;min-height:42px;border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);cursor:pointer;margin-top:6px;transition:transform .12s var(--ein)}
 button:active{transform:scale(.97)}
 button:disabled{opacity:.6}
-#fehler{color:var(--bad);font-weight:600;min-height:24px;margin:14px 0 0;font-size:15px;text-align:center}
+#fehler{color:var(--bad);font-weight:600;min-height:20px;margin:10px 0 0;font-size:13px;text-align:center}
 @media (prefers-reduced-motion: reduce){.card{animation-name:blende}button:active{transform:none}}
 </style>
+<script>(function(){try{var x=localStorage.getItem("umsatzplanner-farbe");if(/^(gruen|orange|gelb|dunkel)$/.test(x))document.documentElement.dataset.farbe=x;}catch(e){}})();</script>
 </head>
 <body>
 <main>
   <div class="card">
-    <h1><svg width="32" height="32" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="15" fill="#FFC94D"/><rect x="8" y="15" width="3.6" height="7" rx="1.8" fill="#1E1C18"/><rect x="13.2" y="11" width="3.6" height="11" rx="1.8" fill="#1E1C18"/><rect x="18.4" y="7.5" width="3.6" height="14.5" rx="1.8" fill="#1E1C18"/></svg>Umsatzplanner</h1>
+    <h1><svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true"><circle class="logo-k" cx="15" cy="15" r="15"/><rect class="logo-b" x="8" y="15" width="3.6" height="7" rx="1.8"/><rect class="logo-b" x="13.2" y="11" width="3.6" height="11" rx="1.8"/><rect class="logo-b" x="18.4" y="7.5" width="3.6" height="14.5" rx="1.8"/></svg>Umsatzplanner</h1>
     <form id="f" novalidate>
       <label for="name">Benutzername</label>
       <input id="name" autocomplete="username" autocapitalize="none" spellcheck="false" required>
